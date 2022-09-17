@@ -1,6 +1,16 @@
 #include "GameApp.h"
 
-GameApp::GameApp(std::string szWindowTitle) 
+void GameApp::ClearReleased() {
+    auto hmIterator = m_hmKeys.begin();
+
+    for (; hmIterator != m_hmKeys.end(); hmIterator++) {
+	if (hmIterator->second == KeyStatus::Released) {
+	    m_hmKeys[hmIterator->first] = KeyStatus::NotPressed;
+	}
+    }
+}
+
+GameApp::GameApp(std::string szWindowTitle)
     : m_szWindowTitle(szWindowTitle) {
     m_pWindow = new sf::RenderWindow(m_WindowSize, m_szWindowTitle);
 }
@@ -18,6 +28,10 @@ sf::VideoMode GameApp::GetWindowSize() {
     return m_WindowSize;
 }
 
+GameApp::KeyStatus GameApp::GetKeyStatus(sf::Keyboard::Key sfTestedKey) {
+    return m_hmKeys[sfTestedKey];
+}
+
 int GameApp::RunGame() {
     m_bCanRun = OnConstruct();
     if (!m_bCanRun) return -1;
@@ -29,10 +43,15 @@ int GameApp::RunGame() {
 	while (m_pWindow->pollEvent(m_WindowEvent)) {
 	    if (m_WindowEvent.type == sf::Event::Closed) {
 		m_pWindow->close();
-	    } 
+	    } else if (m_WindowEvent.type == sf::Event::KeyPressed) {
+		m_hmKeys[m_WindowEvent.key.code] = KeyStatus::Pressed;
+	    } else if (m_WindowEvent.type == sf::Event::KeyReleased) {
+		m_hmKeys[m_WindowEvent.key.code] = KeyStatus::Released;
+	    }
 	}
+	if (!OnUpdate(m_AppClock.getElapsedTime().asSeconds())) return -1;
 
-	if (!OnUpdate(m_fElapsedTime)) return -1;
+	ClearReleased();
 
 	m_pWindow->clear();
 	m_pWindow->display();

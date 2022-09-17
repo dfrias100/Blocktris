@@ -8,6 +8,11 @@ class TestApp : public GameApp {
     }
 
     virtual bool OnUpdate(float fElapsedTime) override {
+	if (GetKeyStatus(sf::Keyboard::A) == KeyStatus::Pressed) {
+	    std::cout << "Key A pressed at time " << fElapsedTime << "." << std::endl;
+	} else if (GetKeyStatus(sf::Keyboard::A) == KeyStatus::Released) {
+	    std::cout << "Key A released at time " << fElapsedTime << "." << std::endl;
+	}
 	return true;
     }
 };
