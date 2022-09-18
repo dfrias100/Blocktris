@@ -13,6 +13,7 @@ protected:
 	Pressed = 1,
 	Released = 2
     };
+
 private:
     sf::RenderWindow* m_pWindow = nullptr;
     sf::Event m_WindowEvent = sf::Event();
@@ -33,12 +34,13 @@ protected:
 
 public:
     GameApp(std::string szWindowTitle = "Default Title");
-    GameApp(sf::VideoMode sfWindowSize, std::string szWindowTitle = "Default Title");
+    GameApp(sf::VideoMode sfWindowSize, 
+	std::string szWindowTitle = "Default Title");
     ~GameApp();
 
     sf::VideoMode GetWindowSize();
     KeyStatus GetKeyStatus(sf::Keyboard::Key sfTestedKey);
-    void AddDrawable(sf::Drawable* sfDrawableObj);
+    void PushDrawableObject(sf::Drawable* sfDrawableObj);
 
     int RunGame();
 };

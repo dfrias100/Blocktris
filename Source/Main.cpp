@@ -15,16 +15,16 @@ class TestApp : public GameApp {
     virtual bool OnUpdate(float fElapsedTime) override {
 	if (GetKeyStatus(sf::Keyboard::A) == KeyStatus::Pressed) {
 	    std::cout << "Key A pressed at time " << fElapsedTime << "." << std::endl;
-	    AddDrawable(m_pTestSprite);
+	    PushDrawableObject(m_pTestSprite);
 	} else if (GetKeyStatus(sf::Keyboard::A) == KeyStatus::Released) {
 	    std::cout << "Key A released at time " << fElapsedTime << "." << std::endl;
 	}
+
 	return true;
     }
 };
 
 int main(int argc, char* argv) {
     TestApp app;
-
     return app.RunGame();
 }

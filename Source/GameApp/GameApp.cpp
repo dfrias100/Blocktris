@@ -60,7 +60,7 @@ GameApp::KeyStatus GameApp::GetKeyStatus(sf::Keyboard::Key sfTestedKey) {
     return m_hmKeys[sfTestedKey];
 }
 
-void GameApp::AddDrawable(sf::Drawable* sfDrawableObj) {
+void GameApp::PushDrawableObject(sf::Drawable* sfDrawableObj) {
     m_llDrawableObjects.push_back(sfDrawableObj);
 }
 
@@ -76,6 +76,7 @@ int GameApp::RunGame() {
 
 	ResetReleasedKeys();
 	RefreshAndDisplay();
+
 	m_llDrawableObjects.clear();
     }
 
