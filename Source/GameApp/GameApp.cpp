@@ -1,6 +1,6 @@
 #include "GameApp.h"
 
-void GameApp::ClearReleased() {
+void GameApp::ResetReleasedKeys() {
     auto hmIterator = m_hmKeys.begin();
 
     for (; hmIterator != m_hmKeys.end(); hmIterator++) {
@@ -8,6 +8,34 @@ void GameApp::ClearReleased() {
 	    m_hmKeys[hmIterator->first] = KeyStatus::NotPressed;
 	}
     }
+}
+
+inline void GameApp::HandleInput() {
+    while (m_pWindow->pollEvent(m_WindowEvent)) {
+	switch (m_WindowEvent.type) {
+	case sf::Event::Closed:
+	    m_pWindow->close();
+	    break;
+	case sf::Event::KeyPressed:
+	case sf::Event::KeyReleased:
+	    m_hmKeys[m_WindowEvent.key.code] = 
+		m_WindowEvent.type == sf::Event::KeyPressed ? 
+		KeyStatus::Pressed : 
+		KeyStatus::Released;
+	    break;
+	}
+    }
+}
+
+void GameApp::RefreshAndDisplay() {
+    m_pWindow->clear();
+    
+    for (auto itObjs = m_llDrawableObjects.begin(); 
+	itObjs != m_llDrawableObjects.end(); itObjs++) {
+	m_pWindow->draw(**itObjs);
+    }
+
+    m_pWindow->display();
 }
 
 GameApp::GameApp(std::string szWindowTitle)
@@ -32,29 +60,23 @@ GameApp::KeyStatus GameApp::GetKeyStatus(sf::Keyboard::Key sfTestedKey) {
     return m_hmKeys[sfTestedKey];
 }
 
-int GameApp::RunGame() {
-    m_bCanRun = OnConstruct();
-    if (!m_bCanRun) return -1;
+void GameApp::AddDrawable(sf::Drawable* sfDrawableObj) {
+    m_llDrawableObjects.push_back(sfDrawableObj);
+}
 
-    sf::Event sfEventCopy;
+int GameApp::RunGame() {
+    if (!OnInitialize()) 
+	return -1;
 
     while (m_pWindow->isOpen()) {
-	// Handle possible main window events
-	while (m_pWindow->pollEvent(m_WindowEvent)) {
-	    if (m_WindowEvent.type == sf::Event::Closed) {
-		m_pWindow->close();
-	    } else if (m_WindowEvent.type == sf::Event::KeyPressed) {
-		m_hmKeys[m_WindowEvent.key.code] = KeyStatus::Pressed;
-	    } else if (m_WindowEvent.type == sf::Event::KeyReleased) {
-		m_hmKeys[m_WindowEvent.key.code] = KeyStatus::Released;
-	    }
-	}
-	if (!OnUpdate(m_AppClock.getElapsedTime().asSeconds())) return -1;
+	HandleInput();
 
-	ClearReleased();
+	if (!OnUpdate(m_AppClock.getElapsedTime().asSeconds())) 
+	    return -1;
 
-	m_pWindow->clear();
-	m_pWindow->display();
+	ResetReleasedKeys();
+	RefreshAndDisplay();
+	m_llDrawableObjects.clear();
     }
 
     return 0;

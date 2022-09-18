@@ -3,6 +3,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <list>
 #include <SFML/Graphics.hpp>
 
 class GameApp {
@@ -20,13 +21,14 @@ private:
 
     std::string m_szWindowTitle;
     std::unordered_map<sf::Keyboard::Key, KeyStatus> m_hmKeys;
+    std::list<sf::Drawable*> m_llDrawableObjects;
 
-    bool m_bCanRun = false;
-
-    void ClearReleased();
+    void ResetReleasedKeys();
+    void HandleInput();
+    void RefreshAndDisplay();
 
 protected:
-    virtual bool OnConstruct() = 0;
+    virtual bool OnInitialize() = 0;
     virtual bool OnUpdate(float fElapsedTime) = 0;
 
 public:
@@ -36,6 +38,7 @@ public:
 
     sf::VideoMode GetWindowSize();
     KeyStatus GetKeyStatus(sf::Keyboard::Key sfTestedKey);
+    void AddDrawable(sf::Drawable* sfDrawableObj);
 
     int RunGame();
 };
