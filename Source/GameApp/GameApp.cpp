@@ -45,7 +45,8 @@ GameApp::GameApp(std::string szWindowTitle)
 
 GameApp::GameApp(sf::VideoMode sfWindowSize, std::string szWindowTitle) 
     : m_WindowSize(sfWindowSize), m_szWindowTitle(szWindowTitle) {
-    m_pWindow = new sf::RenderWindow(m_WindowSize, m_szWindowTitle);
+    m_pWindow = new sf::RenderWindow(m_WindowSize, m_szWindowTitle, 
+	sf::Style::Titlebar | sf::Style::Close);
 }
 
 GameApp::~GameApp() {

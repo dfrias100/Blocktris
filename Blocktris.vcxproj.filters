@@ -21,9 +21,15 @@
     <ClCompile Include="Source\GameApp\GameApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Blocktris\Blocktris.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\GameApp\GameApp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Blocktris\Blocktris.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
