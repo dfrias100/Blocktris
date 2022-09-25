@@ -134,6 +134,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Blocktris\Blocktris.h" />
+    <ClInclude Include="Source\Blocktris\PileBlock.h" />
     <ClInclude Include="Source\GameApp\GameApp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -11,60 +11,73 @@ bool BlockTris::OnInitialize() {
     m_sfBoardOutline.setOutlineThickness(5.0f);
     m_sfBoardOutline.setPosition(BoardOffsetX, BoardOffsetY);
 
-    m_sfLocationCalculationTest.setFillColor(sf::Color::Red);
-    m_sfLocationCalculationTest.setSize(
-	sf::Vector2f(SquareSize - SquareOutlineThickness,
-	    SquareSize - SquareOutlineThickness)
-	);
-    m_sfLocationCalculationTest.setOutlineColor(sf::Color::Transparent);
-    m_sfLocationCalculationTest.setOutlineThickness(SquareOutlineThickness);
-
-    return true;
-}
-
-bool BlockTris::OnUpdate(float fElapsedTime) {
-    PushDrawableObject(&m_sfBoardOutline);
-    float fEndCondX = BoardOffsetX + 10.0f * SquareSize;
-    float fEndCondY = BoardOffsetY + 20.0f * SquareSize;
-
-    if (m_vpsfBlocks.size() > 0) {
-	for (auto ptr : m_vpsfBlocks)
-	    delete ptr;
-	m_vpsfBlocks.clear();
-    }
-
-    for (float xF = BoardOffsetX; xF < fEndCondX; xF += SquareSize) {
-	for (float yF = BoardOffsetY; yF < fEndCondY; yF += SquareSize) {
-	    sf::RectangleShape* psfShape 
-		= new sf::RectangleShape(
-		    sf::Vector2f(SquareSize - SquareOutlineThickness, 
-			SquareSize - SquareOutlineThickness)
-		);
-
-	    psfShape->setPosition(xF + SquareOutlineThickness, yF + SquareOutlineThickness);
-	    psfShape->setFillColor(sf::Color::White);
+    for (int x = 0; x < 10; x++) {
+	for (int y = 0; y < 20; y++) {
+	    sf::RectangleShape* psfShape = &m_aLogicalBoard[y][x].m_sfBlockViz;
+	    psfShape->setSize(sf::Vector2f(TrueSquareSize, TrueSquareSize));
+	    psfShape->setPosition(LogicalCoordsToScreenCoords(x, y));
+	    psfShape->setFillColor(sf::Color::Red);
 	    psfShape->setOutlineThickness(SquareOutlineThickness);
 	    psfShape->setOutlineColor(sf::Color::Transparent);
-
-	    m_vpsfBlocks.push_back(psfShape);
-	    PushDrawableObject(psfShape);
 	}
     }
 
-    if (GetKeyStatus(sf::Keyboard::K) == KeyStatus::Pressed) {
-	m_sfLocationCalculationTest.setPosition(sf::Vector2f(toScreenX, toScreenY));
-	PushDrawableObject(&m_sfLocationCalculationTest);
-    } else if (GetKeyStatus(sf::Keyboard::K) == KeyStatus::Released) {
-	int xRandom = rand() % 10;
-	int yRandom = rand() % 20;
-
-	toScreenX = BoardOffsetX + xRandom * SquareSize + SquareOutlineThickness;
-	toScreenY = BoardOffsetY + yRandom * SquareSize + SquareOutlineThickness;
-    }
+    m_aLogicalBoard[0][0].m_bHidden = false;
 
     return true;
 }
 
-BlockTris::BlockTris() 
+bool BlockTris::OnUpdate(float fFrameTime) {
+    PushDrawableObject(&m_sfBoardOutline);
+
+    fAccumulatedTime += fFrameTime;
+
+    if (fAccumulatedTime > 1.0f) {
+	m_aLogicalBoard[m_sfDummyBlockLocPrev.y][m_sfDummyBlockLocPrev.x].m_bHidden = true;
+
+	m_sfDummyBlockLoc.x += 1;
+
+	if (m_sfDummyBlockLoc.x % 10 == 0) {
+	    m_sfDummyBlockLoc.x = 0;
+	    m_sfDummyBlockLoc.y = (m_sfDummyBlockLoc.y + 1) % 20;
+	}
+
+	m_aLogicalBoard[m_sfDummyBlockLoc.y][m_sfDummyBlockLoc.x].m_bHidden = false;
+
+	m_sfDummyBlockLocPrev = m_sfDummyBlockLoc;
+
+	fAccumulatedTime = 0.0f;
+    }
+
+    DrawPile();
+
+    return true;
+}
+
+void BlockTris::DrawPile() {
+    for (auto& aLine : m_aLogicalBoard) {
+	for (auto& scPileBlock : aLine) {
+	    if (!scPileBlock.m_bHidden) {
+		PushDrawableObject(&scPileBlock.m_sfBlockViz);
+	    }
+	}
+    }
+}
+
+sf::Vector2f BlockTris::LogicalCoordsToScreenCoords(int xLogicalCoord, int yLogicalCoord) {
+    float xfScreenCoords = BoardOffsetX + xLogicalCoord * SquareSize
+	+ SquareOutlineThickness;
+
+    float yfScreenCoords = BoardOffsetY + yLogicalCoord * SquareSize
+	+ SquareOutlineThickness;
+
+    return sf::Vector2f(xfScreenCoords, yfScreenCoords);
+}
+
+sf::Vector2f BlockTris::LogicalCoordsToScreenCoords(sf::Vector2i& sfLogicalCoords) {
+    return LogicalCoordsToScreenCoords(sfLogicalCoords.x, sfLogicalCoords.y);
+}
+
+BlockTris::BlockTris()
     : GameApp(sf::VideoMode(ScreenWidth, ScreenHeight), "Blocktris") {
 }

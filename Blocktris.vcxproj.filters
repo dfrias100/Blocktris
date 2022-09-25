@@ -32,5 +32,8 @@
     <ClInclude Include="Source\Blocktris\Blocktris.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Blocktris\PileBlock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

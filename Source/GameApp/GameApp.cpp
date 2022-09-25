@@ -69,10 +69,16 @@ int GameApp::RunGame() {
     if (!OnInitialize()) 
 	return -1;
 
-    while (m_pWindow->isOpen()) {
-	HandleInput();
+    float fFrameTime;
 
-	if (!OnUpdate(m_AppClock.getElapsedTime().asSeconds())) 
+    while (m_pWindow->isOpen()) {
+	fTimePoint2 = m_AppClock.getElapsedTime().asSeconds();
+	fFrameTime = fTimePoint2 - fTimePoint1;
+	fTimePoint1 = fTimePoint2;
+
+	HandleInput();
+	
+	if (!OnUpdate(fFrameTime)) 
 	    return -1;
 
 	ResetReleasedKeys();

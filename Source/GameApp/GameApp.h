@@ -28,9 +28,12 @@ private:
     void HandleInput();
     void RefreshAndDisplay();
 
+    float fTimePoint1 = 0.0f;
+    float fTimePoint2 = 0.0f;
+
 protected:
     virtual bool OnInitialize() = 0;
-    virtual bool OnUpdate(float fElapsedTime) = 0;
+    virtual bool OnUpdate(float fFrameTime) = 0;
 
 public:
     GameApp(std::string szWindowTitle = "Default Title");
