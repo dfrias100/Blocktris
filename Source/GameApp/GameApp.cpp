@@ -97,13 +97,13 @@ void GameApp::PushDrawableObject(sf::Drawable* sfDrawableObj) {
 }
 
 int GameApp::RunGame() {
-    /*
-    |	After the base and derived class are constructed, we will
-    |   want to initialize the derived class, so that it can get
-    |   ready to run its implementation of their game. If for
-    |   whatever reason it cannot start, the engine immediately quits
-    |   in an error state.
-    |*/
+    /*-----------------------------------------------------------------|
+    |	After the base and derived class are constructed, we will      |
+    |   want to initialize the derived class, so that it can get       |
+    |   ready to run its implementation of their game. If for	       |
+    |   whatever reason it cannot start, the engine immediately quits  |
+    |   in an error state.					       |
+    |-----------------------------------------------------------------*/
     if (!OnInitialize()) 
 	return -1;
 
