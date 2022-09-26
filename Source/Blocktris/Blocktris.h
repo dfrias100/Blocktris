@@ -2,6 +2,7 @@
 #define BLOCKTRIS_H
 
 #include <array>
+#include <utility>
 
 #include "PileBlock.h"
 
@@ -20,25 +21,49 @@ static constexpr float BoardSizeY = SquareSize * 20.0f;
 static constexpr float BoardOffsetX = 1.0f * ScreenWidth / 8.0f;
 static constexpr float BoardOffsetY = (ScreenHeight - BoardSizeY) / 2.0f;
 
+struct SingleBlockTetrimino {
+    sf::Vector2i m_sfLogicalCoords;
+    sf::RectangleShape m_sfTetriminoViz;
+};
+
 
 class BlockTris : public GameApp {
 private:
+    enum class GameStates {
+	BlockGeneration,
+	BlockFalling,
+	BlockHit
+    };
+
     virtual bool OnInitialize() override;
     virtual bool OnUpdate(float fFrameTime) override;
+    
+    void ProcessInput();
 
     void DrawPile();
 
     std::array<std::array<PileBlock, 10>, 20> m_aLogicalBoard;
+    std::pair<sf::Keyboard::Key, KeyStatus> m_BufferedInput;
+    std::vector<KeyStatus> m_vPrevFrameKeyStates;
+    std::vector<KeyStatus> m_vCurrFrameKeyStates;
 
     sf::RectangleShape m_sfBoardOutline;
 
     sf::Vector2f LogicalCoordsToScreenCoords(int xLogicalCoordinate, int yLogicalCoordinate);
     sf::Vector2f LogicalCoordsToScreenCoords(sf::Vector2i& sfLogicalCoords);
 
-    sf::Vector2i m_sfDummyBlockLoc;
-    sf::Vector2i m_sfDummyBlockLocPrev;
+    SingleBlockTetrimino m_SingleBlockTetrimino;
 
-    float fAccumulatedTime = 0.0f;
+    GameStates m_gsState;
+
+    bool m_bKeyPressedInitialLeft;
+    bool m_bKeyPressedInitialRight;
+    bool m_bKeyHeldLeft;
+    bool m_bKeyHeldRight;
+
+    unsigned int m_unMoveInterval = 10;
+    unsigned long long m_ullTetriminoMoveTimer = 1;
+    unsigned long long m_ullGameTicks = 1;
 public:
     BlockTris();
 };

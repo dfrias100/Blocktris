@@ -22,36 +22,117 @@ bool BlockTris::OnInitialize() {
 	}
     }
 
-    m_aLogicalBoard[0][0].m_bHidden = false;
+    m_gsState = GameStates::BlockFalling;
+
+    sf::RectangleShape* psfShape = &m_SingleBlockTetrimino.m_sfTetriminoViz;
+    psfShape->setSize(sf::Vector2f(TrueSquareSize, TrueSquareSize));
+    psfShape->setPosition(LogicalCoordsToScreenCoords(5, 0));
+    psfShape->setFillColor(sf::Color::Red);
+    psfShape->setOutlineThickness(SquareOutlineThickness);
+    psfShape->setOutlineColor(sf::Color::Transparent);
+
+    m_SingleBlockTetrimino.m_sfLogicalCoords.x = 5;
+    m_SingleBlockTetrimino.m_sfLogicalCoords.y = 0;
+
+    m_vPrevFrameKeyStates.resize(2);
+    m_vCurrFrameKeyStates.resize(2);
 
     return true;
 }
 
 bool BlockTris::OnUpdate(float fFrameTime) {
-    PushDrawableObject(&m_sfBoardOutline);
-
-    fAccumulatedTime += fFrameTime;
-
-    if (fAccumulatedTime > 1.0f) {
-	m_aLogicalBoard[m_sfDummyBlockLocPrev.y][m_sfDummyBlockLocPrev.x].m_bHidden = true;
-
-	m_sfDummyBlockLoc.x += 1;
-
-	if (m_sfDummyBlockLoc.x % 10 == 0) {
-	    m_sfDummyBlockLoc.x = 0;
-	    m_sfDummyBlockLoc.y = (m_sfDummyBlockLoc.y + 1) % 20;
+    if (m_ullGameTicks % 15 == 0) {
+	switch (m_gsState)
+	{
+	case GameStates::BlockGeneration:
+	{
+	    m_SingleBlockTetrimino.m_sfLogicalCoords.x = 5;
+	    m_SingleBlockTetrimino.m_sfLogicalCoords.y = 0;
+	    m_SingleBlockTetrimino.m_sfTetriminoViz.setPosition(
+		LogicalCoordsToScreenCoords(m_SingleBlockTetrimino.m_sfLogicalCoords)
+	    );
+	    m_gsState = GameStates::BlockFalling;
 	}
+	    break;
+	case GameStates::BlockFalling:
+	{
+	    int xTest = m_SingleBlockTetrimino.m_sfLogicalCoords.x;
+	    int yTest = m_SingleBlockTetrimino.m_sfLogicalCoords.y + 1;
 
-	m_aLogicalBoard[m_sfDummyBlockLoc.y][m_sfDummyBlockLoc.x].m_bHidden = false;
-
-	m_sfDummyBlockLocPrev = m_sfDummyBlockLoc;
-
-	fAccumulatedTime = 0.0f;
+	    if (yTest >= 20 || !m_aLogicalBoard[yTest][xTest].m_bHidden)
+		m_gsState = GameStates::BlockHit;
+	    else {
+		m_SingleBlockTetrimino.m_sfLogicalCoords.y = yTest;
+		m_SingleBlockTetrimino.m_sfLogicalCoords.x = xTest;
+		m_SingleBlockTetrimino.m_sfTetriminoViz.setPosition(
+		    LogicalCoordsToScreenCoords(m_SingleBlockTetrimino.m_sfLogicalCoords)
+		);
+	    }
+	}
+	    break;
+	case GameStates::BlockHit:
+	{
+	    auto sfNewPileBlockLoc = m_SingleBlockTetrimino.m_sfLogicalCoords;
+	    m_aLogicalBoard[sfNewPileBlockLoc.y][sfNewPileBlockLoc.x].m_bHidden = false;
+	    m_gsState = GameStates::BlockGeneration;
+	}
+	    break;
+	default:
+	    break;
+	}
     }
 
-    DrawPile();
+    m_vCurrFrameKeyStates[0] = GetKeyStatus(sf::Keyboard::Left);
+    m_vCurrFrameKeyStates[1] = GetKeyStatus(sf::Keyboard::Right);
 
+    // Check for the "rising edge"
+    m_bKeyPressedInitialLeft = m_vPrevFrameKeyStates[0] == KeyStatus::NotPressed && 
+	m_vCurrFrameKeyStates[0] == KeyStatus::Pressed;
+
+    m_bKeyPressedInitialRight = m_vPrevFrameKeyStates[1] == KeyStatus::NotPressed &&
+	m_vCurrFrameKeyStates[1] == KeyStatus::Pressed;
+
+    // Check for the "high signal"
+    m_bKeyHeldLeft = m_vPrevFrameKeyStates[0] == KeyStatus::Pressed &&
+	m_vCurrFrameKeyStates[0] == KeyStatus::Pressed;
+
+    m_bKeyHeldRight = m_vPrevFrameKeyStates[1] == KeyStatus::Pressed &&
+	m_vCurrFrameKeyStates[1] == KeyStatus::Pressed;
+    
+    // If we have a rising edge, immediately activate the call to process an input
+    if (m_bKeyPressedInitialLeft || m_bKeyPressedInitialRight) {
+	m_ullTetriminoMoveTimer = 0;
+    }
+
+    // Check this next frame
+    m_vPrevFrameKeyStates = m_vCurrFrameKeyStates;
+
+    // Process input
+    if (m_gsState == GameStates::BlockFalling
+	&& m_ullTetriminoMoveTimer == 0) {
+	ProcessInput();
+    } 
+
+    m_ullGameTicks++;
+    m_ullTetriminoMoveTimer = (m_ullTetriminoMoveTimer + 1) % m_unMoveInterval;
+
+    // Drawing routine
+    PushDrawableObject(&m_sfBoardOutline);
+    PushDrawableObject(&m_SingleBlockTetrimino.m_sfTetriminoViz);
+    DrawPile();
     return true;
+}
+
+void BlockTris::ProcessInput() {
+    int xTest = m_SingleBlockTetrimino.m_sfLogicalCoords.x;
+
+    if (m_bKeyHeldLeft || m_bKeyPressedInitialLeft) xTest = std::max(std::min(xTest - 1, 9), 0);
+    if (m_bKeyHeldRight || m_bKeyPressedInitialRight) xTest = std::max(std::min(xTest + 1, 9), 0);
+
+    m_SingleBlockTetrimino.m_sfLogicalCoords.x = xTest;
+    m_SingleBlockTetrimino.m_sfTetriminoViz.setPosition(
+	LogicalCoordsToScreenCoords(m_SingleBlockTetrimino.m_sfLogicalCoords)
+    );
 }
 
 void BlockTris::DrawPile() {
@@ -79,5 +160,5 @@ sf::Vector2f BlockTris::LogicalCoordsToScreenCoords(sf::Vector2i& sfLogicalCoord
 }
 
 BlockTris::BlockTris()
-    : GameApp(sf::VideoMode(ScreenWidth, ScreenHeight), "Blocktris") {
+    : GameApp(sf::VideoMode(ScreenWidth, ScreenHeight), "Blocktris", FPSControl::Locked30) {
 }

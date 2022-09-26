@@ -3,6 +3,7 @@
 
 int main(int argc, char* argv) {
     srand(time(NULL));
-    BlockTris blocktrisGame;
-    return blocktrisGame.RunGame();
+    BlockTris* blocktrisGame = new BlockTris();
+    int nRetVal = blocktrisGame->RunGame();
+    return nRetVal;
 }

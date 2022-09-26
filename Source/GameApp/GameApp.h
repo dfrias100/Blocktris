@@ -7,6 +7,13 @@
 #include <SFML/Graphics.hpp>
 
 class GameApp {
+public:
+    enum class FPSControl {
+	NONE = 0,
+	Locked30 = 30,
+	Locked60 = 60
+    };
+
 protected:
     enum class KeyStatus {
 	NotPressed = 0,
@@ -22,28 +29,38 @@ private:
 
     std::string m_szWindowTitle;
     std::unordered_map<sf::Keyboard::Key, KeyStatus> m_hmKeys;
-    std::list<sf::Drawable*> m_llDrawableObjects;
+    std::list<sf::Drawable*> m_llstDrawableObjects;
+
+    FPSControl m_ctrlMode;
 
     void ResetReleasedKeys();
     void HandleInput();
     void RefreshAndDisplay();
 
-    float fTimePoint1 = 0.0f;
-    float fTimePoint2 = 0.0f;
+    void LockFrameRate();
+
+    unsigned long long m_ullTimePoint1 = 0;
+    unsigned long long m_ullTimePoint2 = 0;
+
+    float m_fFrametime = 0.0f;
 
 protected:
     virtual bool OnInitialize() = 0;
     virtual bool OnUpdate(float fFrameTime) = 0;
 
-public:
-    GameApp(std::string szWindowTitle = "Default Title");
-    GameApp(sf::VideoMode sfWindowSize, 
-	std::string szWindowTitle = "Default Title");
-    ~GameApp();
-
     sf::VideoMode GetWindowSize();
     KeyStatus GetKeyStatus(sf::Keyboard::Key sfTestedKey);
     void PushDrawableObject(sf::Drawable* sfDrawableObj);
+
+public:
+    GameApp(std::string szWindowTitle = "Default Title", 
+	FPSControl ctrlFpsControl = FPSControl::NONE);
+
+    GameApp(sf::VideoMode sfWindowSize, 
+	std::string szWindowTitle = "Default Title",
+	FPSControl ctrlFpsControl = FPSControl::NONE);
+
+    ~GameApp();
 
     int RunGame();
 };

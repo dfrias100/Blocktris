@@ -30,23 +30,29 @@ inline void GameApp::HandleInput() {
 void GameApp::RefreshAndDisplay() {
     m_pWindow->clear();
     
-    for (auto itObjs = m_llDrawableObjects.begin(); 
-	itObjs != m_llDrawableObjects.end(); itObjs++) {
+    for (auto itObjs = m_llstDrawableObjects.begin(); 
+	itObjs != m_llstDrawableObjects.end(); itObjs++) {
 	m_pWindow->draw(**itObjs);
     }
 
     m_pWindow->display();
 }
 
-GameApp::GameApp(std::string szWindowTitle)
-    : m_szWindowTitle(szWindowTitle) {
-    m_pWindow = new sf::RenderWindow(m_WindowSize, m_szWindowTitle);
+GameApp::GameApp(std::string szWindowTitle,
+    FPSControl ctrlFpsControl)
+    : m_szWindowTitle(szWindowTitle), m_ctrlMode(ctrlFpsControl) {
+    m_pWindow = new sf::RenderWindow(m_WindowSize, m_szWindowTitle,
+	sf::Style::Titlebar | sf::Style::Close);
+    m_fFrametime = 1e6f / int(m_ctrlMode);
 }
 
-GameApp::GameApp(sf::VideoMode sfWindowSize, std::string szWindowTitle) 
-    : m_WindowSize(sfWindowSize), m_szWindowTitle(szWindowTitle) {
+GameApp::GameApp(sf::VideoMode sfWindowSize, std::string szWindowTitle, 
+    FPSControl ctrlFpsControl)
+    : m_WindowSize(sfWindowSize), m_szWindowTitle(szWindowTitle),
+    m_ctrlMode(ctrlFpsControl) {
     m_pWindow = new sf::RenderWindow(m_WindowSize, m_szWindowTitle, 
 	sf::Style::Titlebar | sf::Style::Close);
+    m_fFrametime = 1e6f / int(m_ctrlMode);
 }
 
 GameApp::~GameApp() {
@@ -62,7 +68,7 @@ GameApp::KeyStatus GameApp::GetKeyStatus(sf::Keyboard::Key sfTestedKey) {
 }
 
 void GameApp::PushDrawableObject(sf::Drawable* sfDrawableObj) {
-    m_llDrawableObjects.push_back(sfDrawableObj);
+    m_llstDrawableObjects.push_back(sfDrawableObj);
 }
 
 int GameApp::RunGame() {
@@ -72,9 +78,9 @@ int GameApp::RunGame() {
     float fFrameTime;
 
     while (m_pWindow->isOpen()) {
-	fTimePoint2 = m_AppClock.getElapsedTime().asSeconds();
-	fFrameTime = fTimePoint2 - fTimePoint1;
-	fTimePoint1 = fTimePoint2;
+	m_ullTimePoint2 = m_AppClock.getElapsedTime().asMicroseconds();
+	fFrameTime = (m_ullTimePoint2 - m_ullTimePoint1) / 1e6f;
+	m_ullTimePoint1 = m_ullTimePoint2;
 
 	HandleInput();
 	
@@ -84,8 +90,17 @@ int GameApp::RunGame() {
 	ResetReleasedKeys();
 	RefreshAndDisplay();
 
-	m_llDrawableObjects.clear();
+	m_llstDrawableObjects.clear();
+
+	if (m_ctrlMode != FPSControl::NONE) {
+	    LockFrameRate();
+	}
     }
 
     return 0;
+}
+
+void GameApp::LockFrameRate() {
+    unsigned long long ullEndTime = m_ullTimePoint2 + m_fFrametime;
+    while (m_AppClock.getElapsedTime().asMicroseconds() < ullEndTime) {}
 }
