@@ -29,6 +29,8 @@
 //    Local folder includes    //
 /////////////////////////////////
 #include "PileBlock.h"
+#include "PieceConstants.h"
+#include "Tetrimino/Tetrimino.h"
 
 //////////////////////////////////
 // Other project-local includes //
@@ -40,10 +42,6 @@
 ///////////////////////////////////////
 static constexpr float ScreenWidth = 800.0f;
 static constexpr float ScreenHeight = 800.0f;
-
-static constexpr float SquareSize = 35.0f;
-static constexpr float SquareOutlineThickness = 4.0f;
-static constexpr float TrueSquareSize = SquareSize - SquareOutlineThickness;
 
 static constexpr float BoardSizeX = SquareSize * 10.0f;
 static constexpr float BoardSizeY = SquareSize * 20.0f;
@@ -75,13 +73,17 @@ private:
     virtual bool OnUpdate(float fFrameTime) override;
     
     // Utility function wrapping up functionality into a single routine
-    void ProcessInput();
+    void ProcessInput(std::vector<sf::Vector2i>& vTetriminoLogicalCoords,
+	std::array<sf::RectangleShape, 4>& aBlocksViz);
     void DrawPile();
+    void DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz);
+    void CheckLineClears();
 
     // Data structures representing the state of the game and inputs
     std::array<std::array<PileBlock, 10>, 20> m_aLogicalBoard;
-    std::vector<KeyStatus> m_vPrevFrameKeyStates;
-    std::vector<KeyStatus> m_vCurrFrameKeyStates;
+    std::array<std::pair<unsigned int, bool>, 20> m_aRowMetaData;
+    std::array<KeyStatus, 2> m_aPrevFrameKeyStates;
+    std::array<KeyStatus, 2> m_aCurrFrameKeyStates;
 
     // SFML objects here
     sf::RectangleShape m_sfBoardOutline;
@@ -93,6 +95,8 @@ private:
     // TODO: implement actual tetriminos
     SingleBlockTetrimino m_SingleBlockTetrimino;
 
+    Tetrimino m_ActiveTetrimino;
+
     // Holds our state
     GameStates m_gsState;
 
@@ -103,6 +107,7 @@ private:
     bool m_bKeyHeldRight = false;
 
     // Timers and speeds
+    unsigned int m_unStateInterval = 15;
     unsigned int m_unMoveInterval = 10;
     unsigned long long m_ullTetriminoMoveTimer = 1;
     unsigned long long m_ullGameTicks = 1;

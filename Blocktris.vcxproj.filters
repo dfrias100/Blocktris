@@ -24,6 +24,9 @@
     <ClCompile Include="Source\Blocktris\Blocktris.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Blocktris\Tetrimino\Tetrimino.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\GameApp\GameApp.h">
@@ -33,6 +36,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Blocktris\PileBlock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Blocktris\Tetrimino\Tetrimino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Blocktris\PieceConstants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

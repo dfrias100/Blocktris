@@ -41,28 +41,23 @@ bool BlockTris::OnInitialize() {
 	    psfShape->setOutlineColor(sf::Color::Transparent);
 	}
     }
+
+    // Setup the row metadata. Each element will hold how many full spots there are and whether or not
+    // it has been marked as cleared for a particular check iteration.
+    for (auto& prRow : m_aRowMetaData) {
+	prRow.first = 0;
+	prRow.second = false;
+    }
+
+    auto prPieceData = m_ActiveTetrimino.GetPieceData();
+
+    // Make sure first tetrimino is drawn properly
+    for (int i = 0; i < 4; i++) {
+	prPieceData.second[i].setPosition(LogicalCoordsToScreenCoords(prPieceData.first[i]));
+    }
     
     // For now, we will set up the initial state as falling
     m_gsState = GameStates::BlockFalling;
-
-    // Setting up the "tetrimino" block
-    sf::RectangleShape* psfShape = &m_SingleBlockTetrimino.m_sfTetriminoViz;
-    psfShape->setSize(sf::Vector2f(TrueSquareSize, TrueSquareSize));
-    psfShape->setPosition(LogicalCoordsToScreenCoords(5, 0));
-    psfShape->setFillColor(sf::Color::Red);
-    psfShape->setOutlineThickness(SquareOutlineThickness);
-    psfShape->setOutlineColor(sf::Color::Transparent);
-
-    m_SingleBlockTetrimino.m_sfLogicalCoords.x = 5;
-    m_SingleBlockTetrimino.m_sfLogicalCoords.y = 0;
-
-    /*--------------------------------------------------|
-    |  TODO: Resizing the vector holding the keystates  |
-    |  -- this probably should be an array              |
-    |--------------------------------------------------*/
-    m_vPrevFrameKeyStates.resize(2);
-    m_vCurrFrameKeyStates.resize(2);
-
     return true;
 }
 
@@ -73,7 +68,9 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     |  tick counter by 1.                                        |
     |-----------------------------------------------------------*/
 
-    if (m_ullGameTicks % 15 == 0) {
+    auto prPieceData = m_ActiveTetrimino.GetPieceData();
+
+    if (m_ullGameTicks % m_unStateInterval == 0) {
 	/*---------------------------------------------------------------------|
 	|    The game can be easily interpreted as a finite state machine.     |
 	|    Every time the tick counter is tripped, we process the current    |
@@ -84,44 +81,47 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	|    all the states that need the game could be in.                    |
 	|---------------------------------------------------------------------*/
 
-
-	/*------------------------------------------------------------------------|
-	|   TODO: This specific logic is mostly invalid for multi-block 	  |
-	|   tetriminos -- the actual blocks in Tetris. But the general process	  |
-	|   is much the same. We just have to do it for all the blocks in it.	  |
-	|   It will be re-written as the actual tetriminos are programmed into	  |
-	|   this game.								  |
-	|------------------------------------------------------------------------*/
-
 	switch (m_gsState)
 	{
 	case GameStates::BlockGeneration:
 	{
 	    // Reset the position of our tetrimino now that we've thrown it into the pile
-	    m_SingleBlockTetrimino.m_sfLogicalCoords.x = 5;
-	    m_SingleBlockTetrimino.m_sfLogicalCoords.y = 0;
-	    m_SingleBlockTetrimino.m_sfTetriminoViz.setPosition(
-		LogicalCoordsToScreenCoords(m_SingleBlockTetrimino.m_sfLogicalCoords)
-	    );
+	    m_ActiveTetrimino.ResetPieceAndPivot();
+
+	    for (int i = 0; i < 4; i++) {
+		prPieceData.second[i].setPosition(LogicalCoordsToScreenCoords(prPieceData.first[i]));
+	    }
+
 	    m_gsState = GameStates::BlockFalling;
 	}
 	    break;
 	case GameStates::BlockFalling:
 	{
 	    // Store the candidate coordinates
-	    int xTest = m_SingleBlockTetrimino.m_sfLogicalCoords.x;
-	    int yTest = m_SingleBlockTetrimino.m_sfLogicalCoords.y + 1;
+	    auto vTetriminoLogicalCoords = prPieceData.first;
+	    bool bVerticalCollision = false;
 
-	    // If we have a vertical hit, we switch to the hit state
-	    if (yTest >= 20 || !m_aLogicalBoard[yTest][xTest].m_bHidden)
-		m_gsState = GameStates::BlockHit;
-	    else {
-		// If not, actually set it to the candidate coordinates
-		m_SingleBlockTetrimino.m_sfLogicalCoords.y = yTest;
-		m_SingleBlockTetrimino.m_sfLogicalCoords.x = xTest;
-		m_SingleBlockTetrimino.m_sfTetriminoViz.setPosition(
-		    LogicalCoordsToScreenCoords(m_SingleBlockTetrimino.m_sfLogicalCoords)
-		);
+	    for (auto& sfCoords : vTetriminoLogicalCoords) {
+		sfCoords.y++;
+	    }
+
+	    for (int i = 0; i < 4; i++) {
+		int xTest = vTetriminoLogicalCoords[i].x;
+		int yTest = vTetriminoLogicalCoords[i].y;
+
+		// If we have a vertical hit, we switch to the hit state
+		if (yTest >= 20 || !m_aLogicalBoard[yTest][xTest].m_bHidden) {
+		    m_gsState = GameStates::BlockHit;
+		    bVerticalCollision = true;
+		    break;
+		}
+	    }
+
+	    if (!bVerticalCollision) {
+		prPieceData.first = vTetriminoLogicalCoords;
+		for (int i = 0; i < 4; i++) {
+		    prPieceData.second[i].setPosition(LogicalCoordsToScreenCoords(prPieceData.first[i]));
+		}
 	    }
 	}
 	    break;
@@ -133,8 +133,11 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    |	visible in the logical board.                                |
 	    |---------------------------------------------------------------*/
 
-	    auto sfNewPileBlockLoc = m_SingleBlockTetrimino.m_sfLogicalCoords;
-	    m_aLogicalBoard[sfNewPileBlockLoc.y][sfNewPileBlockLoc.x].m_bHidden = false;
+	    for (auto sfPileBlockLoc : prPieceData.first) {
+		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_bHidden = false;
+		m_aRowMetaData[sfPileBlockLoc.y].first++;
+	    }
+
 	    m_gsState = GameStates::BlockGeneration;
 	}
 	    break;
@@ -142,6 +145,16 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    // Something has gone very wrong if we end up here
 	    break;
 	}
+    }
+
+    bool bDownIsPressed = GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed;
+
+    if (bDownIsPressed && 
+	m_gsState != GameStates::BlockGeneration &&
+	m_gsState != GameStates::BlockHit) {
+	m_unStateInterval = 1;
+    } else {
+	m_unStateInterval = 15;
     }
 
     /*--------------------------------------------------------------------------------|	
@@ -163,22 +176,22 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     |   is present in the original Game Boy release of tetris.                        |
     |--------------------------------------------------------------------------------*/
 
-    m_vCurrFrameKeyStates[0] = GetKeyStatus(sf::Keyboard::Left);
-    m_vCurrFrameKeyStates[1] = GetKeyStatus(sf::Keyboard::Right);
+    m_aCurrFrameKeyStates[0] = GetKeyStatus(sf::Keyboard::Left);
+    m_aCurrFrameKeyStates[1] = GetKeyStatus(sf::Keyboard::Right);
 
     // Check for the "rising edge"
-    m_bKeyPressedInitialLeft = m_vPrevFrameKeyStates[0] == KeyStatus::NotPressed && 
-	m_vCurrFrameKeyStates[0] == KeyStatus::Pressed;
+    m_bKeyPressedInitialLeft = m_aPrevFrameKeyStates[0] == KeyStatus::NotPressed && 
+	m_aCurrFrameKeyStates[0] == KeyStatus::Pressed;
 
-    m_bKeyPressedInitialRight = m_vPrevFrameKeyStates[1] == KeyStatus::NotPressed &&
-	m_vCurrFrameKeyStates[1] == KeyStatus::Pressed;
+    m_bKeyPressedInitialRight = m_aPrevFrameKeyStates[1] == KeyStatus::NotPressed &&
+	m_aCurrFrameKeyStates[1] == KeyStatus::Pressed;
 
     // Check for the "high signal"
-    m_bKeyHeldLeft = m_vPrevFrameKeyStates[0] == KeyStatus::Pressed &&
-	m_vCurrFrameKeyStates[0] == KeyStatus::Pressed;
+    m_bKeyHeldLeft = m_aPrevFrameKeyStates[0] == KeyStatus::Pressed &&
+	m_aCurrFrameKeyStates[0] == KeyStatus::Pressed;
 
-    m_bKeyHeldRight = m_vPrevFrameKeyStates[1] == KeyStatus::Pressed &&
-	m_vCurrFrameKeyStates[1] == KeyStatus::Pressed;
+    m_bKeyHeldRight = m_aPrevFrameKeyStates[1] == KeyStatus::Pressed &&
+	m_aCurrFrameKeyStates[1] == KeyStatus::Pressed;
     
     // If we have a rising edge, interrupt the timer so that the routine fires
     if (m_bKeyPressedInitialLeft || m_bKeyPressedInitialRight) {
@@ -186,12 +199,12 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     }
 
     // Check this next frame
-    m_vPrevFrameKeyStates = m_vCurrFrameKeyStates;
+    m_aPrevFrameKeyStates = m_aCurrFrameKeyStates;
 
     // Process input if the timer is tripped
     if (m_gsState == GameStates::BlockFalling
 	&& m_ullTetriminoMoveTimer == 0) {
-	ProcessInput();
+	ProcessInput(prPieceData.first, prPieceData.second);
     } 
 
     // Advance the timers by 1 tick (1/30th of one second)
@@ -200,22 +213,34 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 
     // Drawing routine
     PushDrawableObject(&m_sfBoardOutline);
-    PushDrawableObject(&m_SingleBlockTetrimino.m_sfTetriminoViz);
+    DrawTetrimino(prPieceData.second);
     DrawPile();
     return true;
 }
 
-void BlockTris::ProcessInput() {
-    int xTest = m_SingleBlockTetrimino.m_sfLogicalCoords.x;
+void BlockTris::ProcessInput(std::vector<sf::Vector2i>& vTetriminoLogicalCoords, 
+    std::array<sf::RectangleShape, 4>& aBlocksViz) {
+    
+    auto vTetriminoLogicalCoordsTest = vTetriminoLogicalCoords;
+    bool bHorizontalCollision = false;
 
-    // Clamp the new x values to allowable values
-    if (m_bKeyHeldLeft || m_bKeyPressedInitialLeft) xTest = std::max(std::min(xTest - 1, 9), 0);
-    if (m_bKeyHeldRight || m_bKeyPressedInitialRight) xTest = std::max(std::min(xTest + 1, 9), 0);
+    for (auto& sfCoords : vTetriminoLogicalCoordsTest) {
+	// Clamp the new x values to allowable values
+	if (m_bKeyHeldLeft || m_bKeyPressedInitialLeft) sfCoords.x--;
+	if (m_bKeyHeldRight|| m_bKeyPressedInitialRight) sfCoords.x++;
 
-    m_SingleBlockTetrimino.m_sfLogicalCoords.x = xTest;
-    m_SingleBlockTetrimino.m_sfTetriminoViz.setPosition(
-	LogicalCoordsToScreenCoords(m_SingleBlockTetrimino.m_sfLogicalCoords)
-    );
+	if (sfCoords.x < 0 || sfCoords.x > 9 || !m_aLogicalBoard[sfCoords.y][sfCoords.x].m_bHidden) {
+	    bHorizontalCollision = true;
+	    break;
+	}
+    }
+
+    if (!bHorizontalCollision) {
+	vTetriminoLogicalCoords = vTetriminoLogicalCoordsTest;
+	for (int i = 0; i < 4; i++) {
+	    aBlocksViz[i].setPosition(LogicalCoordsToScreenCoords(vTetriminoLogicalCoords[i]));
+	}
+    }
 }
 
 void BlockTris::DrawPile() {
@@ -226,6 +251,15 @@ void BlockTris::DrawPile() {
 	    }
 	}
     }
+}
+
+void BlockTris::DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz) {
+    for (auto& sfBlock : aBlocksViz) {
+	PushDrawableObject(&sfBlock);
+    }
+}
+
+void BlockTris::CheckLineClears() {
 }
 
 sf::Vector2f BlockTris::LogicalCoordsToScreenCoords(int xLogicalCoord, int yLogicalCoord) {
