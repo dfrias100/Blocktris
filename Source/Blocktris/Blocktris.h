@@ -72,12 +72,13 @@ private:
     virtual bool OnInitialize() override;
     virtual bool OnUpdate(float fFrameTime) override;
     
-    // Utility function wrapping up functionality into a single routine
+    // Utility functions wrapping up functionality into a single routine
     void ProcessInput(std::vector<sf::Vector2i>& vTetriminoLogicalCoords,
 	std::array<sf::RectangleShape, 4>& aBlocksViz);
     void DrawPile();
     void DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz);
     void CheckLineClears();
+    void RotateTetrimino(sf::Vector2f sfRotationCoefficents);
 
     // Data structures representing the state of the game and inputs
     std::array<std::array<PileBlock, 10>, 20> m_aLogicalBoard;
@@ -105,6 +106,7 @@ private:
     bool m_bKeyPressedInitialRight = false;
     bool m_bKeyHeldLeft = false;
     bool m_bKeyHeldRight = false;
+    bool m_bRotationKeyHeld = false;
 
     // Timers and speeds
     unsigned int m_unStateInterval = 15;

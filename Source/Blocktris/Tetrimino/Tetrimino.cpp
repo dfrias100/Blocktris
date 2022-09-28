@@ -2,6 +2,8 @@
 
 Tetrimino::Tetrimino() {
     m_vCurrentPiece = m_vT_Piece;
+    m_sfPiecePivot = m_aPiecePivots[static_cast<int>(PieceTypes::T_Piece)];
+    m_CurrentPieceType = PieceTypes::T_Piece;
 
     for (auto& sfPiece : m_asfPieceViz) {
 	sfPiece.setSize(sf::Vector2f(TrueSquareSize, TrueSquareSize));
@@ -12,8 +14,17 @@ Tetrimino::Tetrimino() {
 }
 
 void Tetrimino::ResetPieceAndPivot() {
-    m_sfPiecePivot = m_aPiecePivots[rand() % 7];
-    m_vCurrentPiece = m_aPieces[rand() % 7];
+    int nPiecePivot = rand() % 7;
+    m_sfPiecePivot = m_aPiecePivots[nPiecePivot];
+    m_vCurrentPiece = m_aPieces[nPiecePivot];
+}
+
+void Tetrimino::TranslatePivot(sf::Vector2f sfTranslation) {
+    m_sfPiecePivot += sfTranslation;
+}
+
+sf::Vector2f& Tetrimino::GetPivot() {
+    return m_sfPiecePivot;
 }
 
 std::pair<std::vector<sf::Vector2i>&,

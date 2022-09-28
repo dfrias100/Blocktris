@@ -54,10 +54,14 @@ private:
     std::array<sf::RectangleShape, 4> m_asfPieceViz;
     std::vector<sf::Vector2i> m_vCurrentPiece;
     sf::Vector2f m_sfPiecePivot;
+    PieceTypes m_CurrentPieceType;
 public:
     Tetrimino();
     // TODO: this function won't be necessary later
     void ResetPieceAndPivot();
+    void TranslatePivot(sf::Vector2f sfTranslation);
+
+    sf::Vector2f& GetPivot();
     std::pair<std::vector<sf::Vector2i>&, std::array<sf::RectangleShape, 4>&> GetPieceData();
 };
 

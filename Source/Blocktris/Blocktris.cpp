@@ -20,6 +20,13 @@
 
 #include <iostream>
 
+/*--------------------------------------------------------------------------|
+|									    |
+|   TODO: Before proceeding to next development phase, refactor code base;  |
+|   tetrimino will have public data members instead of private ones.	    |
+|									    |
+|--------------------------------------------------------------------------*/
+
 bool BlockTris::OnInitialize() {
     m_sfBoardOutline = sf::RectangleShape(sf::Vector2f(BoardSizeX + SquareOutlineThickness, 
 	BoardSizeY + SquareOutlineThickness));
@@ -118,6 +125,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    }
 
 	    if (!bVerticalCollision) {
+		m_ActiveTetrimino.TranslatePivot({ 0, 1 });
 		prPieceData.first = vTetriminoLogicalCoords;
 		for (int i = 0; i < 4; i++) {
 		    prPieceData.second[i].setPosition(LogicalCoordsToScreenCoords(prPieceData.first[i]));
@@ -145,6 +153,8 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    // Something has gone very wrong if we end up here
 	    break;
 	}
+
+	std::cout << m_ActiveTetrimino.GetPivot().x << ", " << m_ActiveTetrimino.GetPivot().y  << std::endl;
     }
 
     bool bDownIsPressed = GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed;
@@ -207,6 +217,19 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	ProcessInput(prPieceData.first, prPieceData.second);
     } 
 
+    bool bLeftRotation = GetKeyStatus(sf::Keyboard::Z) == KeyStatus::Pressed;
+    bool bRightRotation = GetKeyStatus(sf::Keyboard::X) == KeyStatus::Pressed;
+    bool bRotationKeyPressed = bLeftRotation || bRightRotation;
+
+    if (bRotationKeyPressed && !m_bRotationKeyHeld) {
+	sf::Vector2f sfRotationCoefficients = bLeftRotation ? 
+	    sf::Vector2f(-1.0f, 1.0f) : sf::Vector2f(1.0f, -1.0f);
+	RotateTetrimino(sfRotationCoefficients);
+	m_bRotationKeyHeld = true;
+    } else if (!bRotationKeyPressed) {
+	m_bRotationKeyHeld = false;
+    }
+
     // Advance the timers by 1 tick (1/30th of one second)
     m_ullGameTicks++;
     m_ullTetriminoMoveTimer = (m_ullTetriminoMoveTimer + 1) % m_unMoveInterval;
@@ -236,6 +259,9 @@ void BlockTris::ProcessInput(std::vector<sf::Vector2i>& vTetriminoLogicalCoords,
     }
 
     if (!bHorizontalCollision) {
+	if (m_bKeyHeldLeft || m_bKeyPressedInitialLeft) m_ActiveTetrimino.TranslatePivot({ -1, 0 });
+	if (m_bKeyHeldRight || m_bKeyPressedInitialRight)  m_ActiveTetrimino.TranslatePivot({ 1, 0 });
+
 	vTetriminoLogicalCoords = vTetriminoLogicalCoordsTest;
 	for (int i = 0; i < 4; i++) {
 	    aBlocksViz[i].setPosition(LogicalCoordsToScreenCoords(vTetriminoLogicalCoords[i]));
@@ -260,6 +286,71 @@ void BlockTris::DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz) {
 }
 
 void BlockTris::CheckLineClears() {
+}
+
+void BlockTris::RotateTetrimino(sf::Vector2f sfRotationCoefficents) {
+    auto& sfPivot = m_ActiveTetrimino.GetPivot();
+    auto prPieceData = m_ActiveTetrimino.GetPieceData();
+
+    bool bCanRotate = true;
+
+    std::vector<sf::Vector2i> vTetriminoCoords;
+
+    for (auto sfLogicalCoord : prPieceData.first) {
+	// Some pivots are fractional, to help the math work out better
+	sf::Vector2f sfLogicalCoordFloats = sf::Vector2f(sfLogicalCoord.x, sfLogicalCoord.y);
+
+	// Subtract the pivot from the point
+	sfLogicalCoordFloats -= sfPivot;
+
+	// Coordinate will rotate up along Quadrant I, but on the logical board
+	// the Y-axis grows downwards, this will give us the correct numbers
+	sfLogicalCoordFloats.y *= -1.0f;
+
+	// Swap coordinates 
+	std::swap(sfLogicalCoordFloats.x, sfLogicalCoordFloats.y);
+
+	// Negate X axis as per rotation matrix
+	sfLogicalCoordFloats.x *= sfRotationCoefficents.x;
+
+	// Or negate the Y axis ...
+	sfLogicalCoordFloats.y *= sfRotationCoefficents.y;
+
+	// Bring it back to our coordinate space
+	sfLogicalCoordFloats.y *= -1.0f;
+
+	// Add the pivot back
+	sfLogicalCoordFloats += sfPivot;
+
+	// Push back the rotated point, with points rounded in case there's
+	// some funky float result
+	vTetriminoCoords.push_back(
+	    sf::Vector2i(
+		std::round(sfLogicalCoordFloats.x), 
+		std::round(sfLogicalCoordFloats.y)
+	    )
+	);
+    }
+
+    for (auto& sfLogicalCoord : vTetriminoCoords) {
+	if (
+	    sfLogicalCoord.x <  0 || 
+	    sfLogicalCoord.x >  9 ||
+	    sfLogicalCoord.y <  0 ||
+	    sfLogicalCoord.y > 19 ||
+	    !m_aLogicalBoard[sfLogicalCoord.y][sfLogicalCoord.x].m_bHidden
+	) {
+	    bCanRotate = false;
+	    break;
+	}
+    }
+
+    if (bCanRotate) {
+	prPieceData.first = vTetriminoCoords;
+	for (int i = 0; i < 4; i++) {
+	    prPieceData.second[i].setPosition(LogicalCoordsToScreenCoords(prPieceData.first[i]));
+	}
+    }
 }
 
 sf::Vector2f BlockTris::LogicalCoordsToScreenCoords(int xLogicalCoord, int yLogicalCoord) {
