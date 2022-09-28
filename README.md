@@ -1,2 +1,2 @@
 # Blocktris
-A puzzle game written in C++.
+A block puzzle game written in C++.
