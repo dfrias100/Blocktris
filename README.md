@@ -1,2 +1,2 @@
 # Blocktris
-Tetris clone written in C++.
+A block puzzle game written in C++.
