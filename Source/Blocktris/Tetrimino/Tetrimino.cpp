@@ -1,9 +1,10 @@
 #include "Tetrimino.h"
 
 Tetrimino::Tetrimino() {
-    m_vCurrentPiece = m_vT_Piece;
-    m_sfPiecePivot = m_aPiecePivots[static_cast<int>(PieceTypes::T_Piece)];
-    m_CurrentPieceType = PieceTypes::T_Piece;
+    int nPiecePivot = rand() % 7;
+    m_sfPiecePivot = m_aPiecePivots[nPiecePivot];
+    m_vCurrentPiece = m_aPieces[nPiecePivot];
+    m_CurrentPieceType = static_cast<PieceTypes>(nPiecePivot);
 
     for (auto& sfPiece : m_asfPieceViz) {
 	sfPiece.setSize(sf::Vector2f(TrueSquareSize, TrueSquareSize));
@@ -16,6 +17,9 @@ Tetrimino::Tetrimino() {
 	m_asfPieceViz[i].setPosition(
 	    BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
 	);
+	m_asfPieceViz[i].setFillColor(
+	    m_aPieceColors[nPiecePivot]
+	);
     }
 }
 
@@ -23,10 +27,14 @@ void Tetrimino::ResetPieceAndPivot() {
     int nPiecePivot = rand() % 7;
     m_sfPiecePivot = m_aPiecePivots[nPiecePivot];
     m_vCurrentPiece = m_aPieces[nPiecePivot];
+    m_CurrentPieceType = static_cast<PieceTypes>(nPiecePivot);
 
     for (int i = 0; i < 4; i++) {
 	m_asfPieceViz[i].setPosition(
 	    BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
+	);
+	m_asfPieceViz[i].setFillColor(
+	    m_aPieceColors[nPiecePivot]
 	);
     }
 }
@@ -139,8 +147,8 @@ std::array<sf::RectangleShape, 4>& Tetrimino::GetPieceShapes() {
     return m_asfPieceViz;
 }
 
-sf::Vector2f& Tetrimino::GetPivot() {
-    return m_sfPiecePivot;
+sf::Color Tetrimino::GetColor() {
+    return m_aPieceColors[static_cast<int>(m_CurrentPieceType)];
 }
 
 void Tetrimino::MoveDown() {

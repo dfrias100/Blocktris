@@ -43,6 +43,16 @@ private:
 	m_vZ_Piece
     };
 
+    const std::array<sf::Color, 7> m_aPieceColors = {
+	sf::Color(0x59D9E7FF),
+	sf::Color(0x1F99EAFF),
+	sf::Color(0x329F4BFF),
+	sf::Color(0xE0C230FF),
+	sf::Color(0xFF9A3CFF),
+	sf::Color(0xB152CBFF),
+	sf::Color(0xF33232FF)
+    };
+
     const std::array<sf::Vector2f, 7> m_aPiecePivots = {
 	sf::Vector2f(4.5f, 0.5f),
 	sf::Vector2f(4.0f, 1.0f),
@@ -68,9 +78,8 @@ public:
     void RotateTetrimino(sf::Vector2f sfRotationCoefficents, Board& brdGameField);
     void TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brdGameField);
     const std::vector<sf::Vector2i>& GetLogicalCoords();
-
-    sf::Vector2f& GetPivot();
     std::array<sf::RectangleShape, 4>& GetPieceShapes();
+    sf::Color GetColor();
 };
 
 #endif

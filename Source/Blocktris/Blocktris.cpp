@@ -115,10 +115,17 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    |	visible in the logical board.                                |
 	    |---------------------------------------------------------------*/
 
+	    sf::Color sfTetriminoColor = m_pActiveTetrimino->GetColor();
+
 	    for (auto& sfPileBlockLoc : m_pActiveTetrimino->GetLogicalCoords()) {
 		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_bHidden = false;
 		m_aRowMetaData[sfPileBlockLoc.y].first++;
+		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_sfBlockViz.setFillColor(
+		    sfTetriminoColor
+		);
 	    }
+
+	    CheckLineClears();
 
 	    m_gsState = GameStates::BlockGeneration;
 	}
@@ -127,8 +134,6 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    // Something has gone very wrong if we end up here
 	    break;
 	}
-
-	std::cout << m_pActiveTetrimino->GetPivot().x << ", " << m_pActiveTetrimino->GetPivot().y  << std::endl;
     }
 
     bool bDownIsPressed = GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed;
@@ -217,7 +222,10 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 
     // Drawing routine
     PushDrawableObject(&m_sfBoardOutline);
-    DrawTetrimino(m_pActiveTetrimino->GetPieceShapes());
+
+    if (m_gsState != GameStates::BlockGeneration) 
+	DrawTetrimino(m_pActiveTetrimino->GetPieceShapes());
+
     DrawPile();
     return true;
 }
@@ -239,6 +247,72 @@ void BlockTris::DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz) {
 }
 
 void BlockTris::CheckLineClears() {
+    bool bLinesCleared = false; 
+
+    bLinesCleared = LineBundle(4) || LineBundle(3);
+    
+    if (!bLinesCleared) {
+	bLinesCleared = LineBundle(2);
+	bLinesCleared = bLinesCleared || LineBundle(1);
+    }
+
+    if (bLinesCleared) {
+	int nLinesCleared = 0;
+
+	for (int i = 0; i < 20; i++) {
+	    if (m_aRowMetaData[i].second) {
+		nLinesCleared++;
+		for (int j = i; j >= 1; j--) {
+		    std::swap(m_aRowMetaData[j], m_aRowMetaData[j - 1]);
+		    std::swap(m_aLogicalBoard[j], m_aLogicalBoard[j - 1]);
+		}
+	    }
+	}
+
+	for (int i = 0; i < nLinesCleared; i++) {
+	    m_aRowMetaData[i].first = 0;
+	    m_aRowMetaData[i].second = false;
+
+	    for (auto& plBlock : m_aLogicalBoard[i]) {
+		plBlock.m_bHidden = true;
+	    }
+	}
+
+	for (int y = 0; y < 20; y++) {
+	    for (int x = 0; x < 10; x++) {
+		m_aLogicalBoard[y][x].m_sfBlockViz.setPosition(
+		    LogicalCoordsToScreenCoords(x, y)
+		);
+	    }
+	}
+    }
+}
+
+bool BlockTris::LineBundle(int nLines) {
+    typedef std::array<std::pair<unsigned int, bool>, 20> RowMetaData;
+
+    bool bHasBundle = false;
+    std::vector<RowMetaData::iterator> vRowCandidates;
+
+    for (int i = 0; i <= 20 - nLines; i++) {
+	for (int j = i; j < i + nLines; j++) {
+	    if (m_aRowMetaData[j].first == 10 && !m_aRowMetaData[j].second) {
+		vRowCandidates.push_back(m_aRowMetaData.begin() + j);
+	    }
+	}
+
+	if (vRowCandidates.size() != nLines) {
+	    vRowCandidates.clear();
+	} else {
+	    bHasBundle = true;
+	    for (auto& itRow : vRowCandidates) {
+		itRow->second = true;
+	    }
+	    break;
+	}
+    }
+
+    return bHasBundle;
 }
 
 sf::Vector2f BlockTris::LogicalCoordsToScreenCoords(int xLogicalCoord, int yLogicalCoord) {

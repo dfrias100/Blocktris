@@ -74,11 +74,10 @@ private:
     virtual bool OnUpdate(float fFrameTime) override;
     
     // Utility functions wrapping up functionality into a single routine
-    /*void ProcessInput(std::vector<sf::Vector2i>& vTetriminoLogicalCoords,
-	std::array<sf::RectangleShape, 4>& aBlocksViz);*/
     void DrawPile();
     void DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz);
     void CheckLineClears();
+    bool LineBundle(int nLines);
 
     // Data structures representing the state of the game and inputs
     Board m_aLogicalBoard;
