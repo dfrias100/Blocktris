@@ -20,16 +20,11 @@
 
 #include <iostream>
 
-/*--------------------------------------------------------------------------|
-|									    |
-|   TODO: Before proceeding to next development phase, refactor code base;  |
-|   tetrimino will have public data members instead of private ones.	    |
-|									    |
-|--------------------------------------------------------------------------*/
-
 bool BlockTris::OnInitialize() {
     m_sfBoardOutline = sf::RectangleShape(sf::Vector2f(BoardSizeX + SquareOutlineThickness, 
 	BoardSizeY + SquareOutlineThickness));
+
+    m_pActiveTetrimino = new Tetrimino();
     
     // This formats the rectangle holding the board
     m_sfBoardOutline.setFillColor(sf::Color::Transparent);
@@ -55,13 +50,6 @@ bool BlockTris::OnInitialize() {
 	prRow.first = 0;
 	prRow.second = false;
     }
-
-    auto prPieceData = m_ActiveTetrimino.GetPieceData();
-
-    // Make sure first tetrimino is drawn properly
-    for (int i = 0; i < 4; i++) {
-	prPieceData.second[i].setPosition(LogicalCoordsToScreenCoords(prPieceData.first[i]));
-    }
     
     // For now, we will set up the initial state as falling
     m_gsState = GameStates::BlockFalling;
@@ -74,8 +62,6 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     |  every 15 ticks (~500 ms). Every update call advances the  |
     |  tick counter by 1.                                        |
     |-----------------------------------------------------------*/
-
-    auto prPieceData = m_ActiveTetrimino.GetPieceData();
 
     if (m_ullGameTicks % m_unStateInterval == 0) {
 	/*---------------------------------------------------------------------|
@@ -93,11 +79,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	case GameStates::BlockGeneration:
 	{
 	    // Reset the position of our tetrimino now that we've thrown it into the pile
-	    m_ActiveTetrimino.ResetPieceAndPivot();
-
-	    for (int i = 0; i < 4; i++) {
-		prPieceData.second[i].setPosition(LogicalCoordsToScreenCoords(prPieceData.first[i]));
-	    }
+	    m_pActiveTetrimino->ResetPieceAndPivot();
 
 	    m_gsState = GameStates::BlockFalling;
 	}
@@ -105,16 +87,12 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	case GameStates::BlockFalling:
 	{
 	    // Store the candidate coordinates
-	    auto vTetriminoLogicalCoords = prPieceData.first;
+	    auto& vTetriminoLogicalCoords = m_pActiveTetrimino->GetLogicalCoords();
 	    bool bVerticalCollision = false;
-
-	    for (auto& sfCoords : vTetriminoLogicalCoords) {
-		sfCoords.y++;
-	    }
 
 	    for (int i = 0; i < 4; i++) {
 		int xTest = vTetriminoLogicalCoords[i].x;
-		int yTest = vTetriminoLogicalCoords[i].y;
+		int yTest = vTetriminoLogicalCoords[i].y + 1;
 
 		// If we have a vertical hit, we switch to the hit state
 		if (yTest >= 20 || !m_aLogicalBoard[yTest][xTest].m_bHidden) {
@@ -125,11 +103,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    }
 
 	    if (!bVerticalCollision) {
-		m_ActiveTetrimino.TranslatePivot({ 0, 1 });
-		prPieceData.first = vTetriminoLogicalCoords;
-		for (int i = 0; i < 4; i++) {
-		    prPieceData.second[i].setPosition(LogicalCoordsToScreenCoords(prPieceData.first[i]));
-		}
+		m_pActiveTetrimino->MoveDown();
 	    }
 	}
 	    break;
@@ -141,7 +115,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    |	visible in the logical board.                                |
 	    |---------------------------------------------------------------*/
 
-	    for (auto sfPileBlockLoc : prPieceData.first) {
+	    for (auto& sfPileBlockLoc : m_pActiveTetrimino->GetLogicalCoords()) {
 		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_bHidden = false;
 		m_aRowMetaData[sfPileBlockLoc.y].first++;
 	    }
@@ -154,7 +128,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    break;
 	}
 
-	std::cout << m_ActiveTetrimino.GetPivot().x << ", " << m_ActiveTetrimino.GetPivot().y  << std::endl;
+	std::cout << m_pActiveTetrimino->GetPivot().x << ", " << m_pActiveTetrimino->GetPivot().y  << std::endl;
     }
 
     bool bDownIsPressed = GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed;
@@ -214,7 +188,11 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     // Process input if the timer is tripped
     if (m_gsState == GameStates::BlockFalling
 	&& m_ullTetriminoMoveTimer == 0) {
-	ProcessInput(prPieceData.first, prPieceData.second);
+	m_pActiveTetrimino->TranslateTetriminoHorizontal(
+	    m_bKeyHeldLeft || m_bKeyPressedInitialLeft,
+	    m_bKeyHeldRight || m_bKeyPressedInitialRight,
+	    m_aLogicalBoard
+	);
     } 
 
     bool bLeftRotation = GetKeyStatus(sf::Keyboard::Z) == KeyStatus::Pressed;
@@ -222,9 +200,12 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     bool bRotationKeyPressed = bLeftRotation || bRightRotation;
 
     if (bRotationKeyPressed && !m_bRotationKeyHeld) {
+
 	sf::Vector2f sfRotationCoefficients = bLeftRotation ? 
 	    sf::Vector2f(-1.0f, 1.0f) : sf::Vector2f(1.0f, -1.0f);
-	RotateTetrimino(sfRotationCoefficients);
+
+	m_pActiveTetrimino->RotateTetrimino(sfRotationCoefficients, m_aLogicalBoard);
+
 	m_bRotationKeyHeld = true;
     } else if (!bRotationKeyPressed) {
 	m_bRotationKeyHeld = false;
@@ -236,37 +217,9 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 
     // Drawing routine
     PushDrawableObject(&m_sfBoardOutline);
-    DrawTetrimino(prPieceData.second);
+    DrawTetrimino(m_pActiveTetrimino->GetPieceShapes());
     DrawPile();
     return true;
-}
-
-void BlockTris::ProcessInput(std::vector<sf::Vector2i>& vTetriminoLogicalCoords, 
-    std::array<sf::RectangleShape, 4>& aBlocksViz) {
-    
-    auto vTetriminoLogicalCoordsTest = vTetriminoLogicalCoords;
-    bool bHorizontalCollision = false;
-
-    for (auto& sfCoords : vTetriminoLogicalCoordsTest) {
-	// Clamp the new x values to allowable values
-	if (m_bKeyHeldLeft || m_bKeyPressedInitialLeft) sfCoords.x--;
-	if (m_bKeyHeldRight|| m_bKeyPressedInitialRight) sfCoords.x++;
-
-	if (sfCoords.x < 0 || sfCoords.x > 9 || !m_aLogicalBoard[sfCoords.y][sfCoords.x].m_bHidden) {
-	    bHorizontalCollision = true;
-	    break;
-	}
-    }
-
-    if (!bHorizontalCollision) {
-	if (m_bKeyHeldLeft || m_bKeyPressedInitialLeft) m_ActiveTetrimino.TranslatePivot({ -1, 0 });
-	if (m_bKeyHeldRight || m_bKeyPressedInitialRight)  m_ActiveTetrimino.TranslatePivot({ 1, 0 });
-
-	vTetriminoLogicalCoords = vTetriminoLogicalCoordsTest;
-	for (int i = 0; i < 4; i++) {
-	    aBlocksViz[i].setPosition(LogicalCoordsToScreenCoords(vTetriminoLogicalCoords[i]));
-	}
-    }
 }
 
 void BlockTris::DrawPile() {
@@ -288,71 +241,6 @@ void BlockTris::DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz) {
 void BlockTris::CheckLineClears() {
 }
 
-void BlockTris::RotateTetrimino(sf::Vector2f sfRotationCoefficents) {
-    auto& sfPivot = m_ActiveTetrimino.GetPivot();
-    auto prPieceData = m_ActiveTetrimino.GetPieceData();
-
-    bool bCanRotate = true;
-
-    std::vector<sf::Vector2i> vTetriminoCoords;
-
-    for (auto sfLogicalCoord : prPieceData.first) {
-	// Some pivots are fractional, to help the math work out better
-	sf::Vector2f sfLogicalCoordFloats = sf::Vector2f(sfLogicalCoord.x, sfLogicalCoord.y);
-
-	// Subtract the pivot from the point
-	sfLogicalCoordFloats -= sfPivot;
-
-	// Coordinate will rotate up along Quadrant I, but on the logical board
-	// the Y-axis grows downwards, this will give us the correct numbers
-	sfLogicalCoordFloats.y *= -1.0f;
-
-	// Swap coordinates 
-	std::swap(sfLogicalCoordFloats.x, sfLogicalCoordFloats.y);
-
-	// Negate X axis as per rotation matrix
-	sfLogicalCoordFloats.x *= sfRotationCoefficents.x;
-
-	// Or negate the Y axis ...
-	sfLogicalCoordFloats.y *= sfRotationCoefficents.y;
-
-	// Bring it back to our coordinate space
-	sfLogicalCoordFloats.y *= -1.0f;
-
-	// Add the pivot back
-	sfLogicalCoordFloats += sfPivot;
-
-	// Push back the rotated point, with points rounded in case there's
-	// some funky float result
-	vTetriminoCoords.push_back(
-	    sf::Vector2i(
-		std::round(sfLogicalCoordFloats.x), 
-		std::round(sfLogicalCoordFloats.y)
-	    )
-	);
-    }
-
-    for (auto& sfLogicalCoord : vTetriminoCoords) {
-	if (
-	    sfLogicalCoord.x <  0 || 
-	    sfLogicalCoord.x >  9 ||
-	    sfLogicalCoord.y <  0 ||
-	    sfLogicalCoord.y > 19 ||
-	    !m_aLogicalBoard[sfLogicalCoord.y][sfLogicalCoord.x].m_bHidden
-	) {
-	    bCanRotate = false;
-	    break;
-	}
-    }
-
-    if (bCanRotate) {
-	prPieceData.first = vTetriminoCoords;
-	for (int i = 0; i < 4; i++) {
-	    prPieceData.second[i].setPosition(LogicalCoordsToScreenCoords(prPieceData.first[i]));
-	}
-    }
-}
-
 sf::Vector2f BlockTris::LogicalCoordsToScreenCoords(int xLogicalCoord, int yLogicalCoord) {
     float xfScreenCoords = BoardOffsetX + xLogicalCoord * SquareSize
 	+ SquareOutlineThickness;
@@ -369,4 +257,8 @@ sf::Vector2f BlockTris::LogicalCoordsToScreenCoords(sf::Vector2i& sfLogicalCoord
 
 BlockTris::BlockTris()
     : GameApp(sf::VideoMode(ScreenWidth, ScreenHeight), "Blocktris", FPSControl::Locked30) {
+}
+
+BlockTris::~BlockTris() {
+    delete m_pActiveTetrimino;
 }

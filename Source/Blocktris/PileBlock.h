@@ -20,6 +20,11 @@
 #define PILEBLOCK_H
 
 /////////////////////////////////
+// STL and C/C++ lib includes  //
+/////////////////////////////////
+#include <array>
+
+/////////////////////////////////
 //    3rd-party lib includes   //
 /////////////////////////////////
 #include <SFML/Graphics.hpp>
@@ -28,5 +33,11 @@ struct PileBlock {
     bool m_bHidden = true;
     sf::RectangleShape m_sfBlockViz;
 };
+
+
+/////////////////////////////////
+//          Typedefs           //
+/////////////////////////////////
+typedef std::array<std::array<PileBlock, 10>, 20> Board;
 
 #endif

@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "../PieceConstants.h"
+#include "../PileBlock.h"
+#include "../Blocktris.h"
 
 #include <SFML/Graphics.hpp>
 
@@ -57,11 +59,18 @@ private:
     PieceTypes m_CurrentPieceType;
 public:
     Tetrimino();
+    
     // TODO: this function won't be necessary later
     void ResetPieceAndPivot();
+    
+    void MoveDown();
     void TranslatePivot(sf::Vector2f sfTranslation);
+    void RotateTetrimino(sf::Vector2f sfRotationCoefficents, Board& brdGameField);
+    void TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brdGameField);
+    const std::vector<sf::Vector2i>& GetLogicalCoords();
 
     sf::Vector2f& GetPivot();
+    std::array<sf::RectangleShape, 4>& GetPieceShapes();
     std::pair<std::vector<sf::Vector2i>&, std::array<sf::RectangleShape, 4>&> GetPieceData();
 };
 

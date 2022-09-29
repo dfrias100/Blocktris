@@ -49,10 +49,11 @@ static constexpr float BoardSizeY = SquareSize * 20.0f;
 static constexpr float BoardOffsetX = 1.0f * ScreenWidth / 8.0f;
 static constexpr float BoardOffsetY = (ScreenHeight - BoardSizeY) / 2.0f;
 
-struct SingleBlockTetrimino {
-    sf::Vector2i m_sfLogicalCoords;
-    sf::RectangleShape m_sfTetriminoViz;
-};
+/////////////////////////////////
+//     Forward Declarations    //
+/////////////////////////////////
+
+class Tetrimino;
 
 /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
   Class:    BlockTris
@@ -73,30 +74,22 @@ private:
     virtual bool OnUpdate(float fFrameTime) override;
     
     // Utility functions wrapping up functionality into a single routine
-    void ProcessInput(std::vector<sf::Vector2i>& vTetriminoLogicalCoords,
-	std::array<sf::RectangleShape, 4>& aBlocksViz);
+    /*void ProcessInput(std::vector<sf::Vector2i>& vTetriminoLogicalCoords,
+	std::array<sf::RectangleShape, 4>& aBlocksViz);*/
     void DrawPile();
     void DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz);
     void CheckLineClears();
-    void RotateTetrimino(sf::Vector2f sfRotationCoefficents);
 
     // Data structures representing the state of the game and inputs
-    std::array<std::array<PileBlock, 10>, 20> m_aLogicalBoard;
+    Board m_aLogicalBoard;
     std::array<std::pair<unsigned int, bool>, 20> m_aRowMetaData;
     std::array<KeyStatus, 2> m_aPrevFrameKeyStates;
     std::array<KeyStatus, 2> m_aCurrFrameKeyStates;
 
     // SFML objects here
     sf::RectangleShape m_sfBoardOutline;
-    
-    // Translates logical array coordinates to screen coordinates -- used for blocks only
-    sf::Vector2f LogicalCoordsToScreenCoords(int xLogicalCoordinate, int yLogicalCoordinate);
-    sf::Vector2f LogicalCoordsToScreenCoords(sf::Vector2i& sfLogicalCoords);
 
-    // TODO: implement actual tetriminos
-    SingleBlockTetrimino m_SingleBlockTetrimino;
-
-    Tetrimino m_ActiveTetrimino;
+    Tetrimino* m_pActiveTetrimino;
 
     // Holds our state
     GameStates m_gsState;
@@ -114,7 +107,12 @@ private:
     unsigned long long m_ullTetriminoMoveTimer = 1;
     unsigned long long m_ullGameTicks = 1;
 public:
+    // Translates logical array coordinates to screen coordinates -- used for blocks only
+    static sf::Vector2f LogicalCoordsToScreenCoords(int xLogicalCoordinate, int yLogicalCoordinate);
+    static sf::Vector2f LogicalCoordsToScreenCoords(sf::Vector2i& sfLogicalCoords);
+
     BlockTris();
+    ~BlockTris();
 };
 
 #endif
