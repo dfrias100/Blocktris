@@ -71,7 +71,6 @@ public:
 
     sf::Vector2f& GetPivot();
     std::array<sf::RectangleShape, 4>& GetPieceShapes();
-    std::pair<std::vector<sf::Vector2i>&, std::array<sf::RectangleShape, 4>&> GetPieceData();
 };
 
 #endif

@@ -153,10 +153,3 @@ void Tetrimino::MoveDown() {
 	);
     }
 }
-
-std::pair<std::vector<sf::Vector2i>&,
-    std::array<sf::RectangleShape, 4>&> Tetrimino::GetPieceData() {
-
-    return std::pair<std::vector<sf::Vector2i>&, 
-	std::array<sf::RectangleShape, 4>&>(std::ref(m_vCurrentPiece), std::ref(m_asfPieceViz));
-}
