@@ -21,10 +21,14 @@
 #include <iostream>
 
 bool BlockTris::OnInitialize() {
-    m_sfBoardOutline = sf::RectangleShape(sf::Vector2f(BoardSizeX + SquareOutlineThickness, 
+    m_sfBoardOutline = sf::RectangleShape(sf::Vector2f(BoardSizeX + SquareOutlineThickness,
 	BoardSizeY + SquareOutlineThickness));
 
-    m_pActiveTetrimino = new Tetrimino();
+    m_pvbWaitingBlocks = new VirtualBag();
+
+    // Get our first mino
+    m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
+    m_pvbWaitingBlocks->PeekNextPieces();
     
     // This formats the rectangle holding the board
     m_sfBoardOutline.setFillColor(sf::Color::Transparent);
@@ -63,6 +67,87 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     |  tick counter by 1.                                        |
     |-----------------------------------------------------------*/
 
+    bool bDownIsPressed = GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed;
+
+    if (bDownIsPressed &&
+	m_gsState != GameStates::BlockGeneration &&
+	m_gsState != GameStates::BlockHit) {
+	m_unStateInterval = 1;
+    } else {
+	m_unStateInterval = 15;
+    }
+
+    /*--------------------------------------------------------------------------------|
+    |	Here we record the current state of the keyboard scoped to		      |
+    |	the left and right keys. We will then check for two conditions:		      |
+    |										      |
+    |	1. If a key is being pressed when it was previously not -- a "rising edge".   |
+    |   2. If a key is being pressed when it was previously recorded as being 	      |
+    |      pressed beforehand -- a "high signal" or a "held state".		      |
+    |										      |
+    |	This will allow us to ascertain what to do with regards to the move timer;    |
+    |   if we have a "rising edge" we will interrupt the timer so that the process    |
+    |   input routine will run and move the block. If we don't have a rising edge,    |
+    |   the held state will be used to check if we need to move a block. 	      |
+    |										      |
+    |   The effect is that when individual button presses are made, the block will    |
+    |   move more or less instantaneously. But when held will move the block in	      |
+    |   that direction at the move timer's speed. This is the intended behavior and   |
+    |   is present in the original Game Boy release of tetris.                        |
+    |--------------------------------------------------------------------------------*/
+
+    m_aCurrFrameKeyStates[0] = GetKeyStatus(sf::Keyboard::Left);
+    m_aCurrFrameKeyStates[1] = GetKeyStatus(sf::Keyboard::Right);
+
+    // Check for the "rising edge"
+    m_bKeyPressedInitialLeft = m_aPrevFrameKeyStates[0] == KeyStatus::NotPressed &&
+	m_aCurrFrameKeyStates[0] == KeyStatus::Pressed;
+
+    m_bKeyPressedInitialRight = m_aPrevFrameKeyStates[1] == KeyStatus::NotPressed &&
+	m_aCurrFrameKeyStates[1] == KeyStatus::Pressed;
+
+    // Check for the "high signal"
+    m_bKeyHeldLeft = m_aPrevFrameKeyStates[0] == KeyStatus::Pressed &&
+	m_aCurrFrameKeyStates[0] == KeyStatus::Pressed;
+
+    m_bKeyHeldRight = m_aPrevFrameKeyStates[1] == KeyStatus::Pressed &&
+	m_aCurrFrameKeyStates[1] == KeyStatus::Pressed;
+
+    // If we have a rising edge, interrupt the timer so that the routine fires
+    if (m_bKeyPressedInitialLeft || m_bKeyPressedInitialRight) {
+	m_ullTetriminoMoveTimer = 0;
+    }
+
+    // Check this next frame
+    m_aPrevFrameKeyStates = m_aCurrFrameKeyStates;
+
+    // Process input if the timer is tripped
+    if (m_gsState == GameStates::BlockFalling
+	&& m_ullTetriminoMoveTimer == 0) {
+	m_pActiveTetrimino->TranslateTetriminoHorizontal(
+	    m_bKeyHeldLeft || m_bKeyPressedInitialLeft,
+	    m_bKeyHeldRight || m_bKeyPressedInitialRight,
+	    m_aLogicalBoard
+	);
+    }
+
+    bool bLeftRotation = GetKeyStatus(sf::Keyboard::Z) == KeyStatus::Pressed;
+    bool bRightRotation = GetKeyStatus(sf::Keyboard::X) == KeyStatus::Pressed;
+    bool bRotationKeyPressed = bLeftRotation || bRightRotation;
+
+    if (bRotationKeyPressed && !m_bRotationKeyHeld && m_gsState != GameStates::BlockHit) {
+
+	sf::Vector2f sfRotationCoefficients = bLeftRotation ?
+	    sf::Vector2f(-1.0f, 1.0f) : sf::Vector2f(1.0f, -1.0f);
+
+	m_pActiveTetrimino->RotateTetrimino(sfRotationCoefficients, m_aLogicalBoard);
+
+	m_bRotationKeyHeld = true;
+
+    } else if (!bRotationKeyPressed) {
+	m_bRotationKeyHeld = false;
+    }
+
     if (m_ullGameTicks % m_unStateInterval == 0) {
 	/*---------------------------------------------------------------------|
 	|    The game can be easily interpreted as a finite state machine.     |
@@ -74,12 +159,14 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	|    all the states that need the game could be in.                    |
 	|---------------------------------------------------------------------*/
 
+	// TODO: 
 	switch (m_gsState)
 	{
 	case GameStates::BlockGeneration:
 	{
 	    // Reset the position of our tetrimino now that we've thrown it into the pile
-	    m_pActiveTetrimino->ResetPieceAndPivot();
+	    m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
+	    m_pvbWaitingBlocks->PeekNextPieces();
 
 	    m_gsState = GameStates::BlockFalling;
 	}
@@ -136,86 +223,6 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	}
     }
 
-    bool bDownIsPressed = GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed;
-
-    if (bDownIsPressed && 
-	m_gsState != GameStates::BlockGeneration &&
-	m_gsState != GameStates::BlockHit) {
-	m_unStateInterval = 1;
-    } else {
-	m_unStateInterval = 15;
-    }
-
-    /*--------------------------------------------------------------------------------|	
-    |	Here we record the current state of the keyboard scoped to		      |
-    |	the left and right keys. We will then check for two conditions:		      |
-    |										      |
-    |	1. If a key is being pressed when it was previously not -- a "rising edge".   |
-    |   2. If a key is being pressed when it was previously recorded as being 	      |
-    |      pressed beforehand -- a "high signal" or a "held state".		      |
-    |										      |
-    |	This will allow us to ascertain what to do with regards to the move timer;    |
-    |   if we have a "rising edge" we will interrupt the timer so that the process    |
-    |   input routine will run and move the block. If we don't have a rising edge,    |
-    |   the held state will be used to check if we need to move a block. 	      |
-    |										      |
-    |   The effect is that when individual button presses are made, the block will    |
-    |   move more or less instantaneously. But when held will move the block in	      |
-    |   that direction at the move timer's speed. This is the intended behavior and   |
-    |   is present in the original Game Boy release of tetris.                        |
-    |--------------------------------------------------------------------------------*/
-
-    m_aCurrFrameKeyStates[0] = GetKeyStatus(sf::Keyboard::Left);
-    m_aCurrFrameKeyStates[1] = GetKeyStatus(sf::Keyboard::Right);
-
-    // Check for the "rising edge"
-    m_bKeyPressedInitialLeft = m_aPrevFrameKeyStates[0] == KeyStatus::NotPressed && 
-	m_aCurrFrameKeyStates[0] == KeyStatus::Pressed;
-
-    m_bKeyPressedInitialRight = m_aPrevFrameKeyStates[1] == KeyStatus::NotPressed &&
-	m_aCurrFrameKeyStates[1] == KeyStatus::Pressed;
-
-    // Check for the "high signal"
-    m_bKeyHeldLeft = m_aPrevFrameKeyStates[0] == KeyStatus::Pressed &&
-	m_aCurrFrameKeyStates[0] == KeyStatus::Pressed;
-
-    m_bKeyHeldRight = m_aPrevFrameKeyStates[1] == KeyStatus::Pressed &&
-	m_aCurrFrameKeyStates[1] == KeyStatus::Pressed;
-    
-    // If we have a rising edge, interrupt the timer so that the routine fires
-    if (m_bKeyPressedInitialLeft || m_bKeyPressedInitialRight) {
-	m_ullTetriminoMoveTimer = 0;
-    }
-
-    // Check this next frame
-    m_aPrevFrameKeyStates = m_aCurrFrameKeyStates;
-
-    // Process input if the timer is tripped
-    if (m_gsState == GameStates::BlockFalling
-	&& m_ullTetriminoMoveTimer == 0) {
-	m_pActiveTetrimino->TranslateTetriminoHorizontal(
-	    m_bKeyHeldLeft || m_bKeyPressedInitialLeft,
-	    m_bKeyHeldRight || m_bKeyPressedInitialRight,
-	    m_aLogicalBoard
-	);
-    } 
-
-    bool bLeftRotation = GetKeyStatus(sf::Keyboard::Z) == KeyStatus::Pressed;
-    bool bRightRotation = GetKeyStatus(sf::Keyboard::X) == KeyStatus::Pressed;
-    bool bRotationKeyPressed = bLeftRotation || bRightRotation;
-
-    if (bRotationKeyPressed && !m_bRotationKeyHeld) {
-
-	sf::Vector2f sfRotationCoefficients = bLeftRotation ? 
-	    sf::Vector2f(-1.0f, 1.0f) : sf::Vector2f(1.0f, -1.0f);
-
-	m_pActiveTetrimino->RotateTetrimino(sfRotationCoefficients, m_aLogicalBoard);
-
-	m_bRotationKeyHeld = true;
-    } else if (!bRotationKeyPressed) {
-	m_bRotationKeyHeld = false;
-    }
-
     // Advance the timers by 1 tick (1/30th of one second)
     m_ullGameTicks++;
     m_ullTetriminoMoveTimer = (m_ullTetriminoMoveTimer + 1) % m_unMoveInterval;
@@ -247,13 +254,16 @@ void BlockTris::DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz) {
 }
 
 void BlockTris::CheckLineClears() {
-    bool bLinesCleared = false; 
+    bool bLinesCleared = false;
+    bool bLinesClearedSingle = false;
 
     bLinesCleared = LineBundle(4) || LineBundle(3);
     
     if (!bLinesCleared) {
 	bLinesCleared = LineBundle(2);
-	bLinesCleared = bLinesCleared || LineBundle(1);
+	bLinesClearedSingle = LineBundle(1);
+	bLinesCleared = bLinesCleared || bLinesClearedSingle;
+	LineBundle(1);
     }
 
     if (bLinesCleared) {
@@ -334,5 +344,5 @@ BlockTris::BlockTris()
 }
 
 BlockTris::~BlockTris() {
-    delete m_pActiveTetrimino;
+    delete m_pvbWaitingBlocks;
 }

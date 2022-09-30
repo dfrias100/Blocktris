@@ -1,10 +1,143 @@
 #include "Tetrimino.h"
 
-Tetrimino::Tetrimino() {
-    int nPiecePivot = rand() % 7;
-    m_sfPiecePivot = m_aPiecePivots[nPiecePivot];
-    m_vCurrentPiece = m_aPieces[nPiecePivot];
-    m_CurrentPieceType = static_cast<PieceTypes>(nPiecePivot);
+// NORMAL PIECE WALL KICKS
+/*------------------------------------------|
+|           1        2       3        4	    |
+|   0>>1 (-1, 0) (-1,  1) (0, -2) (-1, -2)  |
+|   1>>0 ( 1, 0) ( 1, -1) (0,  2) ( 1,  2)  |
+|   					    |
+|   1>>2 ( 1, 0) ( 1, -1) (0,  2) ( 1,  2)  |
+|   2>>1 (-1, 0) (-1,  1) (0, -2) (-1, -2)  |
+|   					    |
+|   2>>3 ( 1, 0) ( 1,  1) (0, -2) ( 1, -2)  |
+|   3>>2 (-1, 0) (-1, -1) (0,  2) (-1,  2)  |
+|   					    |
+|   3>>0 (-1, 0) (-1, -1) (0,  2) (-1,  2)  |
+|   0>>3 ( 1, 0) ( 1,  1) (0, -2) ( 1, -2)  |
+|------------------------------------------*/
+
+const std::array<std::array<sf::Vector2i, 4>, 4> Tetrimino::m_aWallKickData = {
+    {   
+	{ sf::Vector2i(-1, 0), sf::Vector2i(-1, -1), sf::Vector2i(0,  2), sf::Vector2i(-1,  2) }, // 0 >> 1
+	{ sf::Vector2i( 1, 0), sf::Vector2i( 1,  1), sf::Vector2i(0, -2), sf::Vector2i( 1, -2) }, // 1 >> 2
+	{ sf::Vector2i(-1, 0), sf::Vector2i(-1,  1), sf::Vector2i(0, -2), sf::Vector2i(-1, -2) }, // 3 >> 2
+	{ sf::Vector2i( 1, 0), sf::Vector2i( 1, -1), sf::Vector2i(0,  2), sf::Vector2i( 1,  2) }  // 0 >> 3
+    }
+};
+
+// I PIECE WALL KICKS
+/*------------------------------------------|
+|           1        2       3        4	    |
+|   0>>1 (-2, 0) ( 1, 0) (-2, -1) ( 1,  2)  |
+|   1>>0 ( 2, 0) (-1, 0) ( 2,  1) (-1, -2)  |
+|	 				    |
+|   1>>2 (-1, 0) ( 2, 0) (-1,  2) ( 2, -1)  |
+|   2>>1 ( 1, 0) (-2, 0) ( 1, -2) (-2,  1)  |
+|	 				    |
+|   2>>3 ( 2, 0) (-1, 0) ( 2,  1) (-1, -2)  |
+|   3>>2 (-2, 0) ( 1, 0) (-2, -1) ( 1,  2)  |
+|	 				    |
+|   3>>0 ( 1, 0) (-2, 0) ( 1, -2) (-2,  1)  |
+|   0>>3 (-1, 0) ( 2, 0) (-1,  2) ( 2, -1)  |
+|------------------------------------------*/
+
+const std::array<std::array<sf::Vector2i, 4>, 4> Tetrimino::m_aWallKickDataIPiece = {
+    {
+	{ sf::Vector2i(-2, 0), sf::Vector2i( 1, 0), sf::Vector2i(-2,  1), sf::Vector2i( 1, -2) }, // 0 >> 1
+	{ sf::Vector2i( 2, 0), sf::Vector2i(-1, 0), sf::Vector2i( 2, -1), sf::Vector2i(-1,  2) }, // 2 >> 3
+	{ sf::Vector2i(-1, 0), sf::Vector2i( 2, 0), sf::Vector2i(-1, -2), sf::Vector2i( 2,  1) }, // 0 >> 3
+	{ sf::Vector2i( 1, 0), sf::Vector2i(-2, 0), sf::Vector2i( 1,  2), sf::Vector2i(-2, -1) }  // 2 >> 1
+    }
+};
+
+const sf::Vector2i Tetrimino::ReturnWallKickVector(int nPrevOrientation, int nNewOrientation, int nTestNo) {
+    switch (nNewOrientation) {
+    case 0:
+	switch (nPrevOrientation)
+	{
+	case 1:
+	    return m_aWallKickData[1][nTestNo];
+	case 3:
+	    return m_aWallKickData[2][nTestNo];
+	}
+	break;
+    case 1:
+	switch (nPrevOrientation)
+	{
+	case 0:
+	case 2:
+	    return m_aWallKickData[0][nTestNo];
+	}
+	break;
+    case 2:
+	switch (nPrevOrientation)
+	{
+	case 1:
+	    return m_aWallKickData[1][nTestNo];
+	case 3:
+	    return m_aWallKickData[2][nTestNo];
+	}
+	break;
+    case 3:
+	switch (nPrevOrientation)
+	{
+	case 0:
+	case 2:
+	    return m_aWallKickData[3][nTestNo];
+	}
+	break;
+    }
+
+    return sf::Vector2i(0, 0);
+}
+
+const sf::Vector2i Tetrimino::ReturnWallKickVectorIPiece(int nPrevOrientation, int nNewOrientation, int nTestNo) {
+    switch (nNewOrientation) {
+    case 0:
+	switch (nPrevOrientation)
+	{
+	case 1:
+	    return m_aWallKickDataIPiece[1][nTestNo];
+	case 3:
+	    return m_aWallKickDataIPiece[3][nTestNo];
+	}
+	break;
+    case 1:
+	switch (nPrevOrientation)
+	{
+	case 0:
+	    return m_aWallKickDataIPiece[0][nTestNo];
+	case 2:
+	    return m_aWallKickDataIPiece[3][nTestNo];
+	}
+	break;
+    case 2:
+	switch (nPrevOrientation)
+	{
+	case 1:
+	    return m_aWallKickDataIPiece[2][nTestNo];
+	case 3:
+	    return m_aWallKickDataIPiece[0][nTestNo];
+	}
+	break;
+    case 3:
+	switch (nPrevOrientation)
+	{
+	case 0:
+	    return m_aWallKickDataIPiece[2][nTestNo];
+	case 2:
+	    return m_aWallKickDataIPiece[1][nTestNo];
+	}
+	break;
+    }
+
+    return sf::Vector2i(0, 0);
+}
+
+Tetrimino::Tetrimino(PieceTypes ptType) {
+    m_sfPiecePivot = m_aPiecePivots[static_cast<int>(ptType)];
+    m_vCurrentPiece = m_aPieces[static_cast<int>(ptType)];
+    m_CurrentPieceType = ptType;
 
     for (auto& sfPiece : m_asfPieceViz) {
 	sfPiece.setSize(sf::Vector2f(TrueSquareSize, TrueSquareSize));
@@ -18,23 +151,7 @@ Tetrimino::Tetrimino() {
 	    BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
 	);
 	m_asfPieceViz[i].setFillColor(
-	    m_aPieceColors[nPiecePivot]
-	);
-    }
-}
-
-void Tetrimino::ResetPieceAndPivot() {
-    int nPiecePivot = rand() % 7;
-    m_sfPiecePivot = m_aPiecePivots[nPiecePivot];
-    m_vCurrentPiece = m_aPieces[nPiecePivot];
-    m_CurrentPieceType = static_cast<PieceTypes>(nPiecePivot);
-
-    for (int i = 0; i < 4; i++) {
-	m_asfPieceViz[i].setPosition(
-	    BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
-	);
-	m_asfPieceViz[i].setFillColor(
-	    m_aPieceColors[nPiecePivot]
+	    m_aPieceColors[static_cast<int>(ptType)]
 	);
     }
 }
@@ -47,8 +164,6 @@ void Tetrimino::RotateTetrimino(sf::Vector2f sfRotationCoefficents,
     Board& brdGameField) {
     if (m_CurrentPieceType == PieceTypes::O_Piece)
 	return;
-
-    bool bCanRotate = true;
 
     std::vector<sf::Vector2i> vTetriminoCoords;
 
@@ -88,25 +203,50 @@ void Tetrimino::RotateTetrimino(sf::Vector2f sfRotationCoefficents,
 	);
     }
 
-    for (auto& sfLogicalCoord : vTetriminoCoords) {
-	if (
-	    sfLogicalCoord.x < 0 ||
-	    sfLogicalCoord.x >  9 ||
-	    sfLogicalCoord.y < 0 ||
-	    sfLogicalCoord.y > 19 ||
-	    !brdGameField[sfLogicalCoord.y][sfLogicalCoord.x].m_bHidden
-	    ) {
-	    bCanRotate = false;
-	    break;
-	}
-    }
+    bool bCanRotate;
+    int nRotationIncrement = sfRotationCoefficents.y == -1 ? 1 : -1;
+    int nPossibleRotation = (4 + ((m_nCurrentOrientation + nRotationIncrement) % 4)) % 4;
+    sf::Vector2i sfTranslationVector = sf::Vector2i(0, 0);
 
-    if (bCanRotate) {
-	m_vCurrentPiece = vTetriminoCoords;
-	for (int i = 0; i < 4; i++) {
-	    m_asfPieceViz[i].setPosition(
-		BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
-	    );
+    for (int i = 0; i < 5; i++) {
+	if (i != 0) {
+	    if (m_CurrentPieceType != PieceTypes::I_Piece)
+		sfTranslationVector = ReturnWallKickVector(m_nCurrentOrientation, nPossibleRotation, i - 1);
+	    else
+		sfTranslationVector = ReturnWallKickVectorIPiece(m_nCurrentOrientation, nPossibleRotation, i - 1);
+	}
+
+	bCanRotate = true;
+
+	for (auto& sfLogicalCoord : vTetriminoCoords) {
+	    sfLogicalCoord += sfTranslationVector;
+	    if (
+		sfLogicalCoord.x < 0 ||
+		sfLogicalCoord.x >  9 ||
+		sfLogicalCoord.y < 0 ||
+		sfLogicalCoord.y > 19 ||
+		!brdGameField[sfLogicalCoord.y][sfLogicalCoord.x].m_bHidden
+	    ) {
+		bCanRotate = false;
+	    }
+	}
+
+	if (bCanRotate) {
+	    m_nPrevOrientation = m_nCurrentOrientation;
+	    m_nCurrentOrientation = nPossibleRotation;
+
+	    TranslatePivot(sf::Vector2f(sfTranslationVector));
+	    m_vCurrentPiece = vTetriminoCoords;
+	    for (int i = 0; i < 4; i++) {
+		m_asfPieceViz[i].setPosition(
+		    BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
+		);
+	    }
+	    return;
+	} else {
+	    for (auto& sfLogicalCoord : vTetriminoCoords) {
+		sfLogicalCoord -= sfTranslationVector;
+	    }
 	}
     }
 }

@@ -24,6 +24,7 @@
 /////////////////////////////////
 #include <array>
 #include <utility>
+#include <memory>
 
 /////////////////////////////////
 //    Local folder includes    //
@@ -31,6 +32,7 @@
 #include "PileBlock.h"
 #include "PieceConstants.h"
 #include "Tetrimino/Tetrimino.h"
+#include "VirtualBag/VirtualBag.h"
 
 //////////////////////////////////
 // Other project-local includes //
@@ -54,6 +56,7 @@ static constexpr float BoardOffsetY = (ScreenHeight - BoardSizeY) / 2.0f;
 /////////////////////////////////
 
 class Tetrimino;
+class VirtualBag;
 
 /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
   Class:    BlockTris
@@ -88,7 +91,9 @@ private:
     // SFML objects here
     sf::RectangleShape m_sfBoardOutline;
 
-    Tetrimino* m_pActiveTetrimino;
+    // Tetrimino related objects
+    VirtualBag* m_pvbWaitingBlocks;
+    std::shared_ptr<Tetrimino> m_pActiveTetrimino;
 
     // Holds our state
     GameStates m_gsState;
