@@ -83,10 +83,17 @@ private:
     
     // Utility functions wrapping up functionality into a single routine
     void DrawPile();
+    void CalculateHardDropPreview();
     void SetupOutline(sf::RectangleShape& sfRect, float fxOffset, float fyOffset);
     void DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz);
     void CheckLineClears();
     void DrawPreviewAndHeld();
+    void DrawTetriminoInBox(
+	std::array<sf::RectangleShape, 4>& aBlocksViz, 
+	sf::Vector2f sfPivot,
+	sf::Vector2f sfCenter, 
+	float fVerticalOffset
+    );
     bool LineBundle(int nLines);
 
     // Data structures representing the state of the game and inputs
@@ -105,6 +112,7 @@ private:
     std::shared_ptr<Tetrimino> m_pActiveTetrimino;
     std::shared_ptr<Tetrimino> m_pHeldTetrimino;
     std::shared_ptr<Tetrimino> m_pPreviewTetrimino;
+    std::shared_ptr<Tetrimino> m_pHardDropPreview;
 
     // Holds our state
     GameStates m_gsState;

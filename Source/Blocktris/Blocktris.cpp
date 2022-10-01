@@ -18,8 +18,6 @@
 
 #include "Blocktris.h"
 
-#include <iostream>
-
 bool BlockTris::OnInitialize() {
     m_sfBoardOutline = sf::RectangleShape(sf::Vector2f(BoardSizeX,
 	BoardSizeY));
@@ -33,6 +31,7 @@ bool BlockTris::OnInitialize() {
     // Get our first mino
     m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
     m_pPreviewTetrimino = m_pvbWaitingBlocks->PeekNextPieces();
+    m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
     
     // This formats the rectangle holding the board
     SetupOutline(m_sfBoardOutline, BoardOffsetX, BoardOffsetY);
@@ -70,20 +69,41 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     |  tick counter by 1.                                        |
     |-----------------------------------------------------------*/
 
+    if (m_gsState != GameStates::BlockGeneration)
+	CalculateHardDropPreview();
+
     // Input affecting game states
     bool bHeldKeyPressed = GetKeyStatus(sf::Keyboard::S) == KeyStatus::Pressed;
-    bool bDownIsPressed = GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed;
+    bool bHardDropKeyReleased = GetKeyStatus(sf::Keyboard::Up) == KeyStatus::Released;
+    bool bStateKeyPressed = false;
 
     if (bHeldKeyPressed && !m_bAlreadyPressedHeld) {
 	m_bAlreadyPressedHeld = true;
 	m_bSkipInput = true;
-	m_bHeldChanged = true;
 	m_gsState = GameStates::HoldPieceAttempt;
 	m_ullGameTicks = 0;
+	bStateKeyPressed = true;
+    }
+
+    if (bHardDropKeyReleased && !bStateKeyPressed) {
+	std::swap(m_pActiveTetrimino, m_pHardDropPreview);
+
+	for (auto& sfShape : m_pActiveTetrimino->GetPieceShapes()) {
+	    sf::Color sfShapeColor = sfShape.getFillColor();
+	    sfShapeColor.a = 255;
+	    sfShape.setFillColor(sfShapeColor);
+	}
+
+	m_gsState = GameStates::BlockHit;
+	m_ullGameTicks = 0;
+	m_bSkipInput = true;
     }
 
     // Input affecting the blocks
     if (!m_bSkipInput) {
+	bool bDownIsPressed = GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed;
+
+	// Fast drop control
 	if (bDownIsPressed &&
 	    m_gsState != GameStates::BlockGeneration &&
 	    m_gsState != GameStates::BlockHit) {
@@ -93,20 +113,20 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	}
 
 	/*--------------------------------------------------------------------------------|
-	|	Here we record the current state of the keyboard scoped to		      |
-	|	the left and right keys. We will then check for two conditions:		      |
-	|										      |
-	|	1. If a key is being pressed when it was previously not -- a "rising edge".   |
-	|   2. If a key is being pressed when it was previously recorded as being 	      |
-	|      pressed beforehand -- a "high signal" or a "held state".		      |
-	|										      |
-	|	This will allow us to ascertain what to do with regards to the move timer;    |
+	|   Here we record the current state of the keyboard scoped to			  |
+	|   the left and right keys. We will then check for two conditions:		  |
+	|										  |
+	|   1. If a key is being pressed when it was previously not -- a "rising edge".   |
+	|   2. If a key is being pressed when it was previously recorded as being 	  |
+	|      pressed beforehand -- a "high signal" or a "held state".		          |
+	|										  |
+	|   This will allow us to ascertain what to do with regards to the move timer;    |
 	|   if we have a "rising edge" we will interrupt the timer so that the process    |
 	|   input routine will run and move the block. If we don't have a rising edge,    |
-	|   the held state will be used to check if we need to move a block. 	      |
-	|										      |
+	|   the held state will be used to check if we need to move a block. 	          |
+	|										  |
 	|   The effect is that when individual button presses are made, the block will    |
-	|   move more or less instantaneously. But when held will move the block in	      |
+	|   move more or less instantaneously. But when held will move the block in	  |
 	|   that direction at the move timer's speed. This is the intended behavior and   |
 	|   is present in the original Game Boy release of tetris.                        |
 	|--------------------------------------------------------------------------------*/
@@ -144,6 +164,9 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 		m_bKeyHeldRight || m_bKeyPressedInitialRight,
 		m_aLogicalBoard
 	    );
+
+	    m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
+	    CalculateHardDropPreview();
 	}
 
 	bool bLeftRotation = GetKeyStatus(sf::Keyboard::Z) == KeyStatus::Pressed;
@@ -151,14 +174,14 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	bool bRotationKeyPressed = bLeftRotation || bRightRotation;
 
 	if (bRotationKeyPressed && !m_bRotationKeyHeld && m_gsState != GameStates::BlockHit) {
-
 	    sf::Vector2f sfRotationCoefficients = bLeftRotation ?
 		sf::Vector2f(-1.0f, 1.0f) : sf::Vector2f(1.0f, -1.0f);
-
 	    m_pActiveTetrimino->RotateTetrimino(sfRotationCoefficients, m_aLogicalBoard);
 
+	    m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
+	    CalculateHardDropPreview();
+	    
 	    m_bRotationKeyHeld = true;
-
 	} else if (!bRotationKeyPressed) {
 	    m_bRotationKeyHeld = false;
 	}
@@ -185,6 +208,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 
 	    m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
 	    m_pPreviewTetrimino = m_pvbWaitingBlocks->PeekNextPieces();
+	    m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
 
 	    m_bRefreshPreview = true;
 
@@ -222,6 +246,8 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    |	visible in the logical board.                                |
 	    |---------------------------------------------------------------*/
 
+	    m_bSkipInput = false;
+
 	    sf::Color sfTetriminoColor = m_pActiveTetrimino->GetColor();
 
 	    for (auto& sfPileBlockLoc : m_pActiveTetrimino->GetLogicalCoords()) {
@@ -248,9 +274,13 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    } else {
 		m_gsState = GameStates::BlockFalling;
 		m_pActiveTetrimino->ResetPieceAndPivot();
+
+		m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
+		CalculateHardDropPreview();
 	    }
 
 	    m_bSkipInput = false;
+	    m_bHeldChanged = true;
 	}
 	    break;
 	default:
@@ -269,8 +299,10 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     PushDrawableObject(&m_sfHeldOutline);
     DrawPreviewAndHeld();
 
-    if (m_gsState != GameStates::BlockGeneration) 
+    if (m_gsState != GameStates::BlockGeneration) {
+	DrawTetrimino(m_pHardDropPreview->GetPieceShapes());
 	DrawTetrimino(m_pActiveTetrimino->GetPieceShapes());
+    }
 
     DrawPile();
     return true;
@@ -283,6 +315,33 @@ void BlockTris::DrawPile() {
 		PushDrawableObject(&scPileBlock.m_sfBlockViz);
 	    }
 	}
+    }
+}
+
+void BlockTris::CalculateHardDropPreview() {
+    bool bVerticalCollision = false;
+    while (!bVerticalCollision) {
+	auto& vTetriminoLogicalCoords = m_pHardDropPreview->GetLogicalCoords();
+
+	for (int i = 0; i < 4; i++) {
+	    int xTest = vTetriminoLogicalCoords[i].x;
+	    int yTest = vTetriminoLogicalCoords[i].y + 1;
+
+	    if (yTest >= 20 || !m_aLogicalBoard[yTest][xTest].m_bHidden) {
+		bVerticalCollision = true;
+		break;
+	    }
+	}
+
+	if (!bVerticalCollision) {
+	    m_pHardDropPreview->MoveDown();
+	}
+    }
+    
+    for (auto& sfShape : m_pHardDropPreview->GetPieceShapes()) {
+	sf::Color sfShapeColor = sfShape.getFillColor();
+	sfShapeColor.a = 127;
+	sfShape.setFillColor(sfShapeColor);
     }
 }
 
@@ -352,28 +411,15 @@ void BlockTris::DrawPreviewAndHeld() {
 
 	auto& aHeldPieceShapes = m_pHeldTetrimino->GetPieceShapes();
 	sf::Vector2f sfHeldPiecePivot = m_pHeldTetrimino->GetPivot();
-    
-	float xfBoxCenter = ScreenWidth - (PreviewRectOffsetX + PreviewRectSize);
-	float yfBoxCenter = PreviewRectOffsetY;
-
-	xfBoxCenter += PreviewRectSize / 2.0f;
-	yfBoxCenter += PreviewRectSize / 2.0f;
-
-	sfHeldPiecePivot = LogicalCoordsToScreenCoords(
-	    sfHeldPiecePivot.x,
-	    sfHeldPiecePivot.y
+	sf::Vector2f sfBoxCenter(
+	    ScreenWidth - (PreviewRectOffsetX + PreviewRectSize),
+	    PreviewRectOffsetY
 	);
 
-	sfHeldPiecePivot.x = (xfBoxCenter - sfHeldPiecePivot.x);
-	sfHeldPiecePivot.y = (yfBoxCenter - sfHeldPiecePivot.y);
+	sfBoxCenter.x += PreviewRectSize / 2.0f;
+	sfBoxCenter.y += PreviewRectSize / 2.0f;
 
-	for (auto& sfShape : aHeldPieceShapes) {
-	    sf::Vector2f sfCurrrentLocation = sfShape.getPosition();
-	    sfCurrrentLocation.x += sfHeldPiecePivot.x;
-	    sfCurrrentLocation.y += sfHeldPiecePivot.y;
-	    sfCurrrentLocation.x -= SquareSize / 2.0f;
-	    sfShape.setPosition(sfCurrrentLocation);
-	}
+	DrawTetriminoInBox(aHeldPieceShapes, sfHeldPiecePivot, sfBoxCenter, 0.0f);
 
 	m_bHeldChanged = false;
     }
@@ -381,29 +427,16 @@ void BlockTris::DrawPreviewAndHeld() {
     if (m_bRefreshPreview) {
 	auto& aPreviewPieceShapes = m_pPreviewTetrimino->GetPieceShapes();
 	sf::Vector2f sfPreviewPiecePivot = m_pPreviewTetrimino->GetPivot();
-
-	float xfBoxCenter = PreviewRectOffsetX;
-	float yfBoxCenter = PreviewRectOffsetY;
-
-	xfBoxCenter += PreviewRectSize / 2.0f;
-	yfBoxCenter += PreviewRectSize / 2.0f;
-
-	sfPreviewPiecePivot = LogicalCoordsToScreenCoords(
-	    sfPreviewPiecePivot.x,
-	    sfPreviewPiecePivot.y
+	sf::Vector2f sfBoxCenter(
+	    PreviewRectOffsetX,
+	    PreviewRectOffsetY
 	);
 
-	sfPreviewPiecePivot.x = (xfBoxCenter - sfPreviewPiecePivot.x);
-	sfPreviewPiecePivot.y = (yfBoxCenter - sfPreviewPiecePivot.y);
+	sfBoxCenter.x += PreviewRectSize / 2.0f;
+	sfBoxCenter.y += PreviewRectSize / 2.0f;
 
-	for (auto& sfShape : aPreviewPieceShapes) {
-	    sf::Vector2f sfCurrrentLocation = sfShape.getPosition();
-	    sfCurrrentLocation.x += sfPreviewPiecePivot.x;
-	    sfCurrrentLocation.y += sfPreviewPiecePivot.y;
-	    sfCurrrentLocation.x -= SquareSize / 2.0f;
-	    sfShape.setPosition(sfCurrrentLocation);
-	}
-
+	DrawTetriminoInBox(aPreviewPieceShapes, sfPreviewPiecePivot, sfBoxCenter, 0.0f);
+	
 	m_bRefreshPreview = false;
     }
 
@@ -412,9 +445,29 @@ void BlockTris::DrawPreviewAndHeld() {
 	DrawTetrimino(aHeldPieceShapes);
     }
 
-    if (m_pPreviewTetrimino) {
-	auto& aPreviewPieceShapes = m_pPreviewTetrimino->GetPieceShapes();
-	DrawTetrimino(aPreviewPieceShapes);
+    auto& aPreviewPieceShapes = m_pPreviewTetrimino->GetPieceShapes();
+    DrawTetrimino(aPreviewPieceShapes);
+}
+
+void BlockTris::DrawTetriminoInBox(
+    std::array<sf::RectangleShape, 4>& aBlocksViz, 
+    sf::Vector2f sfPivot,
+    sf::Vector2f sfCenter,
+    float fVerticalOffset
+) {
+    sfPivot = LogicalCoordsToScreenCoords(
+	sfPivot.x,
+	sfPivot.y
+    );
+
+    sfPivot = sfCenter - sfPivot;
+
+    for (auto& sfShape : aBlocksViz) {
+	sf::Vector2f sfCurrrentLocation = sfShape.getPosition();
+	sfCurrrentLocation.x += sfPivot.x;
+	sfCurrrentLocation.y += sfPivot.y;
+	sfCurrrentLocation.x -= SquareSize / 2.0f;
+	sfShape.setPosition(sfCurrrentLocation);
     }
 }
 
