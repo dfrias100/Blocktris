@@ -21,23 +21,52 @@
 bool BlockTris::OnInitialize() {
     m_sfBoardOutline = sf::RectangleShape(sf::Vector2f(BoardSizeX,
 	BoardSizeY));
-    m_sfPreviewOutline = sf::RectangleShape(sf::Vector2f(PreviewRectSize,
-	PreviewRectSize));
-    m_sfHeldOutline = sf::RectangleShape(sf::Vector2f(PreviewRectSize,
-	PreviewRectSize));
+    m_sfPreviewOutline = sf::RectangleShape(sf::Vector2f(PreviewRectSizeX,
+	PreviewRectSizeY));
+    m_sfHeldOutline = sf::RectangleShape(sf::Vector2f(PreviewRectSizeX,
+	PreviewRectSizeX));
+
+    m_sfBgTexture.loadFromFile("bg.png");
+    m_sfDigitsTexture.loadFromFile("digit_atlas.png");
+
+    m_sfBackground.setTexture(m_sfBgTexture, true);
+
+    float xfOffset = 0.0f;
+    for (auto& sfSprite : m_asfScoreSprites) {
+	sfSprite.setPosition(FirstDigitLineX + xfOffset, FirstDigitLineY);
+	sfSprite.setTexture(m_sfDigitsTexture);
+	sfSprite.setTextureRect(sf::IntRect(0, 0, FontWidth, FontHeight));
+	xfOffset += FontWidth;
+    }
+
+    xfOffset = 0.0f;
+    for (auto& sfSprite : m_asfLevelSprites) {
+	sfSprite.setPosition(FirstDigitLineX + xfOffset, FirstDigitLineY + DigitLineGap);
+	sfSprite.setTexture(m_sfDigitsTexture);
+	sfSprite.setTextureRect(sf::IntRect(0, 0, FontWidth, FontHeight));
+	xfOffset += FontWidth;
+    }
+
+    xfOffset = 0.0f;
+    for (auto& sfSprite : m_asfLinesSprites) {
+	sfSprite.setPosition(FirstDigitLineX + xfOffset, FirstDigitLineY + 2.0f * DigitLineGap);
+	sfSprite.setTexture(m_sfDigitsTexture);
+	sfSprite.setTextureRect(sf::IntRect(0, 0, FontWidth, FontHeight));
+	xfOffset += FontWidth;
+    }
 
     m_pvbWaitingBlocks = new VirtualBag();
 
     // Get our first mino
     m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
-    m_pPreviewTetrimino = m_pvbWaitingBlocks->PeekNextPieces();
+    m_aPreviewTetriminos = m_pvbWaitingBlocks->PeekNextPieces();
     m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
     
     // This formats the rectangle holding the board
     SetupOutline(m_sfBoardOutline, BoardOffsetX, BoardOffsetY);
     SetupOutline(m_sfPreviewOutline, PreviewRectOffsetX, PreviewRectOffsetY);
     SetupOutline(m_sfHeldOutline, 
-	ScreenWidth - (PreviewRectOffsetX + PreviewRectSize), 
+	ScreenWidth - (PreviewRectOffsetX + PreviewRectSizeX), 
 	PreviewRectOffsetY);
 
     // Pre-formatting the blocks that will make up the tetrimino pile
@@ -75,28 +104,50 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     // Input affecting game states
     bool bHeldKeyPressed = GetKeyStatus(sf::Keyboard::S) == KeyStatus::Pressed;
     bool bHardDropKeyReleased = GetKeyStatus(sf::Keyboard::Up) == KeyStatus::Released;
+    bool bPauseKeyReleased = GetKeyStatus(sf::Keyboard::P) == KeyStatus::Released;
     bool bStateKeyPressed = false;
+    bool bJustEnteredPause = false;
 
-    if (bHeldKeyPressed && !m_bAlreadyPressedHeld) {
-	m_bAlreadyPressedHeld = true;
-	m_bSkipInput = true;
-	m_gsState = GameStates::HoldPieceAttempt;
-	m_ullGameTicks = 0;
-	bStateKeyPressed = true;
-    }
+    if (m_gsState != GameStates::Pause) {
+	if (bPauseKeyReleased) {
+	    m_bSkipInput = true;
 
-    if (bHardDropKeyReleased && !bStateKeyPressed) {
-	std::swap(m_pActiveTetrimino, m_pHardDropPreview);
+	    m_gsSavedState = m_gsState;
+	    m_gsState = GameStates::Pause;
 
-	for (auto& sfShape : m_pActiveTetrimino->GetPieceShapes()) {
-	    sf::Color sfShapeColor = sfShape.getFillColor();
-	    sfShapeColor.a = 255;
-	    sfShape.setFillColor(sfShapeColor);
+	    m_ullGameTicks = 0;
+	    m_unStateInterval = 1;
+	
+	    bJustEnteredPause = true;
+	    bStateKeyPressed = true;
 	}
 
-	m_gsState = GameStates::BlockHit;
-	m_ullGameTicks = 0;
-	m_bSkipInput = true;
+	if (bHeldKeyPressed && !m_bAlreadyPressedHeld && !bStateKeyPressed) {
+	    m_bAlreadyPressedHeld = true;
+	    m_bSkipInput = true;
+
+	    m_gsState = GameStates::HoldPieceAttempt;
+
+	    m_ullGameTicks = 0;
+	
+	    bStateKeyPressed = true;
+	}
+
+	if (bHardDropKeyReleased && !bStateKeyPressed) {
+	    std::swap(m_pActiveTetrimino, m_pHardDropPreview);
+
+	    for (auto& sfShape : m_pActiveTetrimino->GetPieceShapes()) {
+		sf::Color sfShapeColor = sfShape.getFillColor();
+		sfShapeColor.a = 255;
+		sfShape.setFillColor(sfShapeColor);
+	    }
+
+	    m_gsState = GameStates::BlockHit;
+
+	    m_ullGameTicks = 0;
+	
+	    m_bSkipInput = true;
+	}
     }
 
     // Input affecting the blocks
@@ -207,7 +258,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 		m_bAlreadyPressedHeld = false;
 
 	    m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
-	    m_pPreviewTetrimino = m_pvbWaitingBlocks->PeekNextPieces();
+	    m_aPreviewTetriminos = m_pvbWaitingBlocks->PeekNextPieces();
 	    m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
 
 	    m_bRefreshPreview = true;
@@ -283,6 +334,17 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    m_bHeldChanged = true;
 	}
 	    break;
+	case GameStates::Pause:
+	{
+	    if (bPauseKeyReleased && !bJustEnteredPause) {
+		m_bSkipInput = false;
+		m_gsState = m_gsSavedState;
+		m_unStateInterval = 15;
+	    }
+
+	    bJustEnteredPause = false;
+	}
+	    break;
 	default:
 	    // Something has gone very wrong if we end up here
 	    break;
@@ -294,14 +356,28 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     m_ullTetriminoMoveTimer = (m_ullTetriminoMoveTimer + 1) % m_unMoveInterval;
 
     // Drawing routine
+    PushDrawableObject(&m_sfBackground);
     PushDrawableObject(&m_sfBoardOutline);
     PushDrawableObject(&m_sfPreviewOutline);
     PushDrawableObject(&m_sfHeldOutline);
     DrawPreviewAndHeld();
 
     if (m_gsState != GameStates::BlockGeneration) {
-	DrawTetrimino(m_pHardDropPreview->GetPieceShapes());
+	if (m_gsState != GameStates::Pause)
+	    DrawTetrimino(m_pHardDropPreview->GetPieceShapes());
 	DrawTetrimino(m_pActiveTetrimino->GetPieceShapes());
+    }
+
+    for (auto& sfShape : m_asfScoreSprites) {
+	PushDrawableObject(&sfShape);
+    }
+
+    for (auto& sfShape : m_asfLevelSprites) {
+	PushDrawableObject(&sfShape);
+    }
+
+    for (auto& sfShape : m_asfLinesSprites) {
+	PushDrawableObject(&sfShape);
     }
 
     DrawPile();
@@ -371,8 +447,6 @@ void BlockTris::CheckLineClears() {
 	LineBundle(1);
     }
 
- 
-
     if (bLinesCleared) {
 	int nLinesCleared = 0;
 
@@ -402,6 +476,10 @@ void BlockTris::CheckLineClears() {
 		);
 	    }
 	}
+
+	m_unLinesCleared += nLinesCleared;
+
+	UpdateLinesText();
     }
 }
 
@@ -412,12 +490,12 @@ void BlockTris::DrawPreviewAndHeld() {
 	auto& aHeldPieceShapes = m_pHeldTetrimino->GetPieceShapes();
 	sf::Vector2f sfHeldPiecePivot = m_pHeldTetrimino->GetPivot();
 	sf::Vector2f sfBoxCenter(
-	    ScreenWidth - (PreviewRectOffsetX + PreviewRectSize),
+	    ScreenWidth - (PreviewRectOffsetX + PreviewRectSizeX),
 	    PreviewRectOffsetY
 	);
 
-	sfBoxCenter.x += PreviewRectSize / 2.0f;
-	sfBoxCenter.y += PreviewRectSize / 2.0f;
+	sfBoxCenter.x += PreviewRectSizeX / 2.0f;
+	sfBoxCenter.y += PreviewRectSizeX / 2.0f;
 
 	DrawTetriminoInBox(aHeldPieceShapes, sfHeldPiecePivot, sfBoxCenter, 0.0f);
 
@@ -425,17 +503,22 @@ void BlockTris::DrawPreviewAndHeld() {
     }
  
     if (m_bRefreshPreview) {
-	auto& aPreviewPieceShapes = m_pPreviewTetrimino->GetPieceShapes();
-	sf::Vector2f sfPreviewPiecePivot = m_pPreviewTetrimino->GetPivot();
-	sf::Vector2f sfBoxCenter(
-	    PreviewRectOffsetX,
-	    PreviewRectOffsetY
-	);
+	int i = 0;
+	for (float yOffset = 0.0f; yOffset < (PreviewRectSizeY - PreviewRectSizeX * 0.5f); yOffset += PreviewRectSizeX) {
+	    m_aPreviewTetriminos[i]->ResetPieceAndPivot();
+	    auto& aPreviewPieceShapes = m_aPreviewTetriminos[i]->GetPieceShapes();
+	    sf::Vector2f sfPreviewPiecePivot = m_aPreviewTetriminos[i]->GetPivot();
+	    sf::Vector2f sfBoxCenter(
+		PreviewRectOffsetX,
+		PreviewRectOffsetY
+	    );
 
-	sfBoxCenter.x += PreviewRectSize / 2.0f;
-	sfBoxCenter.y += PreviewRectSize / 2.0f;
+	    sfBoxCenter.x += PreviewRectSizeX / 2.0f;
+	    sfBoxCenter.y += PreviewRectSizeX / 2.0f;
 
-	DrawTetriminoInBox(aPreviewPieceShapes, sfPreviewPiecePivot, sfBoxCenter, 0.0f);
+	    DrawTetriminoInBox(aPreviewPieceShapes, sfPreviewPiecePivot, sfBoxCenter, yOffset);
+	    i++;
+	}
 	
 	m_bRefreshPreview = false;
     }
@@ -445,8 +528,10 @@ void BlockTris::DrawPreviewAndHeld() {
 	DrawTetrimino(aHeldPieceShapes);
     }
 
-    auto& aPreviewPieceShapes = m_pPreviewTetrimino->GetPieceShapes();
-    DrawTetrimino(aPreviewPieceShapes);
+    for (auto& tmPreview : m_aPreviewTetriminos) {
+	auto& aPreviewPieceShapes = tmPreview->GetPieceShapes();
+	DrawTetrimino(aPreviewPieceShapes);
+    }
 }
 
 void BlockTris::DrawTetriminoInBox(
@@ -465,9 +550,28 @@ void BlockTris::DrawTetriminoInBox(
     for (auto& sfShape : aBlocksViz) {
 	sf::Vector2f sfCurrrentLocation = sfShape.getPosition();
 	sfCurrrentLocation.x += sfPivot.x;
-	sfCurrrentLocation.y += sfPivot.y;
+	sfCurrrentLocation.y += sfPivot.y + fVerticalOffset;
 	sfCurrrentLocation.x -= SquareSize / 2.0f;
 	sfShape.setPosition(sfCurrrentLocation);
+    }
+}
+
+void BlockTris::UpdateLinesText() {
+    if (m_unLinesCleared > 999)
+	m_unLinesCleared = 999;
+
+    std::vector<unsigned int> vDigits;
+    unsigned int unLinesCopy = m_unLinesCleared;
+
+    for (int i = 0; i < 3; i++) {
+	vDigits.push_back(unLinesCopy % 10);
+	unLinesCopy /= 10;
+    }
+
+    for (int i = 0; i < 3; i++) {
+	m_asfLinesSprites[i].setTextureRect(sf::IntRect(
+	    vDigits[2 - i] * FontWidth, 0, FontWidth, FontHeight
+	));
     }
 }
 

@@ -28,7 +28,7 @@ private:
     std::default_random_engine m_rndGenerator;
 public:
     std::shared_ptr<Tetrimino> GetNextPiece();
-    std::shared_ptr<Tetrimino> PeekNextPieces();
+    std::array<std::shared_ptr<Tetrimino>, 3> PeekNextPieces();
     void ReshuffleAndRefill();
     VirtualBag();
 };

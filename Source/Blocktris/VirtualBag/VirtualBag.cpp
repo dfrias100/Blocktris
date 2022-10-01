@@ -7,10 +7,20 @@ std::shared_ptr<Tetrimino> VirtualBag::GetNextPiece() {
     return tmNextPiece;
 }
 
-std::shared_ptr<Tetrimino> VirtualBag::PeekNextPieces() {
-    if (m_lstPieceQueue.size() == 0)
+std::array<std::shared_ptr<Tetrimino>, 3> VirtualBag::PeekNextPieces() {
+    if (m_lstPieceQueue.size() == 3)
 	ReshuffleAndRefill();
-    return m_lstPieceQueue.front();
+
+    std::array<std::shared_ptr<Tetrimino>, 3> aTetriminoPieces;
+
+    auto itPieces = m_lstPieceQueue.begin();
+
+    for (int i = 0; i < 3; i++) {
+	aTetriminoPieces[i] = *itPieces;
+	itPieces++;
+    }
+
+    return aTetriminoPieces;
 }
 
 void VirtualBag::ReshuffleAndRefill() {

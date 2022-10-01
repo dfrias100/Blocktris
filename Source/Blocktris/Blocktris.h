@@ -51,9 +51,18 @@ static constexpr float ScreenHeight = 800.0f;
 static constexpr float BoardOffsetX = (ScreenWidth - BoardSizeX) / 2.0f;
 static constexpr float BoardOffsetY = (ScreenHeight - BoardSizeY) / 2.0f;
 
-static constexpr float PreviewRectSize = SquareSize * 4.0f + 10.0f;
-static constexpr float PreviewRectOffsetX = BoardOffsetX * 1.5f + BoardSizeX - PreviewRectSize * 0.5f + 2.5f;
+static constexpr float PreviewRectSizeX = SquareSize * 4.0f + 15.0f;
+static constexpr float PreviewRectSizeY = 3.0f * PreviewRectSizeX;
+static constexpr float PreviewRectOffsetX = BoardOffsetX * 1.5f + BoardSizeX - PreviewRectSizeX * 0.5f + 2.5f;
 static constexpr float PreviewRectOffsetY = 0.15f * ScreenHeight;
+
+static constexpr float FirstDigitLineX = (53.0f / 875.0f) * ScreenWidth;
+static constexpr float FirstDigitLineY = (392.0f / 800.0f) * ScreenHeight;
+
+static constexpr float DigitLineGap = (111.0f / 800.0f) * ScreenHeight;
+
+static constexpr int FontWidth = 18;
+static constexpr int FontHeight = 35;
 
 /////////////////////////////////
 //     Forward Declarations    //
@@ -75,7 +84,9 @@ private:
 	BlockGeneration,
 	BlockFalling,
 	BlockHit,
-	HoldPieceAttempt
+	HoldPieceAttempt,
+	Pause,
+	GameOver
     };
 
     virtual bool OnInitialize() override;
@@ -94,6 +105,7 @@ private:
 	sf::Vector2f sfCenter, 
 	float fVerticalOffset
     );
+    void UpdateLinesText();
     bool LineBundle(int nLines);
 
     // Data structures representing the state of the game and inputs
@@ -106,16 +118,23 @@ private:
     sf::RectangleShape m_sfBoardOutline;
     sf::RectangleShape m_sfPreviewOutline;
     sf::RectangleShape m_sfHeldOutline;
+    sf::Texture m_sfBgTexture;
+    sf::Texture m_sfDigitsTexture;
+    sf::Sprite m_sfBackground;
+    std::array<sf::Sprite, 7> m_asfScoreSprites;
+    std::array<sf::Sprite, 3> m_asfLinesSprites;
+    std::array<sf::Sprite, 3> m_asfLevelSprites;
 
     // Tetrimino related objects
     VirtualBag* m_pvbWaitingBlocks;
     std::shared_ptr<Tetrimino> m_pActiveTetrimino;
     std::shared_ptr<Tetrimino> m_pHeldTetrimino;
-    std::shared_ptr<Tetrimino> m_pPreviewTetrimino;
     std::shared_ptr<Tetrimino> m_pHardDropPreview;
+    std::array<std::shared_ptr<Tetrimino>, 3> m_aPreviewTetriminos;
 
     // Holds our state
     GameStates m_gsState;
+    GameStates m_gsSavedState;
 
     // Other meta data about the state of the game
     bool m_bKeyPressedInitialLeft = false;
@@ -133,6 +152,11 @@ private:
     unsigned int m_unMoveInterval = 10;
     unsigned long long m_ullTetriminoMoveTimer = 1;
     unsigned long long m_ullGameTicks = 1;
+
+    // Player statistics
+    unsigned long long m_ullPoints = 0;
+    unsigned int m_unLevel = 0;
+    unsigned int m_unLinesCleared = 0;
 public:
     // Translates logical array coordinates to screen coordinates -- used for blocks only
     static sf::Vector2f LogicalCoordsToScreenCoords(int xLogicalCoordinate, int yLogicalCoordinate);
