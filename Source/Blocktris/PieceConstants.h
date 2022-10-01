@@ -2,8 +2,6 @@
 #define PIECECONSTANTS_H
 
 static constexpr float SquareSize = 35.0f;
-static constexpr float SquareOutlineThickness = 0.0f;
-static constexpr float TrueSquareSize = SquareSize - SquareOutlineThickness;
 
 enum class PieceTypes {
     I_Piece = 0,

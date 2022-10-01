@@ -139,13 +139,6 @@ Tetrimino::Tetrimino(PieceTypes ptType) {
     m_vCurrentPiece = m_aPieces[static_cast<int>(ptType)];
     m_CurrentPieceType = ptType;
 
-    for (auto& sfPiece : m_asfPieceViz) {
-	sfPiece.setSize(sf::Vector2f(TrueSquareSize, TrueSquareSize));
-	sfPiece.setFillColor(sf::Color::Red);
-	sfPiece.setOutlineThickness(SquareOutlineThickness);
-	sfPiece.setOutlineColor(sf::Color::Transparent);
-    }
-
     for (int i = 0; i < 4; i++) {
 	m_asfPieceViz[i].setPosition(
 	    BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
@@ -153,6 +146,7 @@ Tetrimino::Tetrimino(PieceTypes ptType) {
 	m_asfPieceViz[i].setFillColor(
 	    m_aPieceColors[static_cast<int>(ptType)]
 	);
+	m_asfPieceViz[i].setSize(sf::Vector2f(SquareSize, SquareSize));
     }
 }
 
@@ -287,6 +281,10 @@ std::array<sf::RectangleShape, 4>& Tetrimino::GetPieceShapes() {
     return m_asfPieceViz;
 }
 
+sf::Vector2f Tetrimino::GetPivot() {
+    return m_sfPiecePivot;
+}
+
 sf::Color Tetrimino::GetColor() {
     return m_aPieceColors[static_cast<int>(m_CurrentPieceType)];
 }
@@ -300,4 +298,19 @@ void Tetrimino::MoveDown() {
 	    BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
 	);
     }
+}
+
+void Tetrimino::ResetPieceAndPivot() {
+    m_sfPiecePivot = m_aPiecePivots[static_cast<int>(m_CurrentPieceType)];
+    m_vCurrentPiece = m_aPieces[static_cast<int>(m_CurrentPieceType)];
+
+    for (int i = 0; i < 4; i++) {
+	m_asfPieceViz[i].setPosition(
+	    BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
+	);
+    }
+}
+
+void Tetrimino::SetPivot(sf::Vector2f sfPivotCoords) {
+    m_sfPiecePivot = sfPivotCoords;
 }

@@ -42,14 +42,18 @@
 ///////////////////////////////////////
 // Pre-processor/constexpr constants //
 ///////////////////////////////////////
-static constexpr float ScreenWidth = 800.0f;
-static constexpr float ScreenHeight = 800.0f;
-
 static constexpr float BoardSizeX = SquareSize * 10.0f;
 static constexpr float BoardSizeY = SquareSize * 20.0f;
 
-static constexpr float BoardOffsetX = 1.0f * ScreenWidth / 8.0f;
+static constexpr float ScreenWidth = 2.5f * BoardSizeX;
+static constexpr float ScreenHeight = 800.0f;
+
+static constexpr float BoardOffsetX = (ScreenWidth - BoardSizeX) / 2.0f;
 static constexpr float BoardOffsetY = (ScreenHeight - BoardSizeY) / 2.0f;
+
+static constexpr float PreviewRectSize = SquareSize * 4.0f + 10.0f;
+static constexpr float PreviewRectOffsetX = BoardOffsetX * 1.5f + BoardSizeX - PreviewRectSize * 0.5f + 2.5f;
+static constexpr float PreviewRectOffsetY = 0.15f * ScreenHeight;
 
 /////////////////////////////////
 //     Forward Declarations    //
@@ -70,7 +74,8 @@ private:
     enum class GameStates {
 	BlockGeneration,
 	BlockFalling,
-	BlockHit
+	BlockHit,
+	HoldPieceAttempt
     };
 
     virtual bool OnInitialize() override;
@@ -78,8 +83,10 @@ private:
     
     // Utility functions wrapping up functionality into a single routine
     void DrawPile();
+    void SetupOutline(sf::RectangleShape& sfRect, float fxOffset, float fyOffset);
     void DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz);
     void CheckLineClears();
+    void DrawPreviewAndHeld();
     bool LineBundle(int nLines);
 
     // Data structures representing the state of the game and inputs
@@ -90,10 +97,14 @@ private:
 
     // SFML objects here
     sf::RectangleShape m_sfBoardOutline;
+    sf::RectangleShape m_sfPreviewOutline;
+    sf::RectangleShape m_sfHeldOutline;
 
     // Tetrimino related objects
     VirtualBag* m_pvbWaitingBlocks;
     std::shared_ptr<Tetrimino> m_pActiveTetrimino;
+    std::shared_ptr<Tetrimino> m_pHeldTetrimino;
+    std::shared_ptr<Tetrimino> m_pPreviewTetrimino;
 
     // Holds our state
     GameStates m_gsState;
@@ -104,6 +115,10 @@ private:
     bool m_bKeyHeldLeft = false;
     bool m_bKeyHeldRight = false;
     bool m_bRotationKeyHeld = false;
+    bool m_bAlreadyPressedHeld = false;
+    bool m_bSkipInput = false;
+    bool m_bHeldChanged = false;
+    bool m_bRefreshPreview = true;
 
     // Timers and speeds
     unsigned int m_unStateInterval = 15;
@@ -113,6 +128,7 @@ private:
 public:
     // Translates logical array coordinates to screen coordinates -- used for blocks only
     static sf::Vector2f LogicalCoordsToScreenCoords(int xLogicalCoordinate, int yLogicalCoordinate);
+    static sf::Vector2f LogicalCoordsToScreenCoords(float xLogicalCoordinate, float yLogicalCoordinate);
     static sf::Vector2f LogicalCoordsToScreenCoords(sf::Vector2i& sfLogicalCoords);
 
     BlockTris();

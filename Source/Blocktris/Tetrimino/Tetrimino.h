@@ -50,7 +50,7 @@ private:
 	sf::Vector2f(4.5f, 0.5f),
 	sf::Vector2f(4.0f, 1.0f),
 	sf::Vector2f(4.0f, 1.0f),
-	sf::Vector2f(0.0f, 0.0f), // The O-piece pivot doesn't matter anyway
+	sf::Vector2f(4.5f, 1.0f), // The O-piece now matters, for drawing a held piece...
 	sf::Vector2f(4.0f, 1.0f),
 	sf::Vector2f(4.0f, 1.0f),
 	sf::Vector2f(4.0f, 1.0f),
@@ -71,11 +71,14 @@ public:
     Tetrimino(PieceTypes ptType);
     
     void MoveDown();
+    void ResetPieceAndPivot();
     void TranslatePivot(sf::Vector2f sfTranslation);
     void RotateTetrimino(sf::Vector2f sfRotationCoefficents, Board& brdGameField);
+    void SetPivot(sf::Vector2f sfPivotCoords);
     void TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brdGameField);
     const std::vector<sf::Vector2i>& GetLogicalCoords();
     std::array<sf::RectangleShape, 4>& GetPieceShapes();
+    sf::Vector2f GetPivot();
     sf::Color GetColor();
 };
 

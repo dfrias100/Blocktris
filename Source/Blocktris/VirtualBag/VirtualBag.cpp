@@ -2,6 +2,7 @@
 
 std::shared_ptr<Tetrimino> VirtualBag::GetNextPiece() {
     std::shared_ptr<Tetrimino> tmNextPiece = m_lstPieceQueue.front();
+    tmNextPiece->ResetPieceAndPivot();
     m_lstPieceQueue.pop_front();
     return tmNextPiece;
 }
