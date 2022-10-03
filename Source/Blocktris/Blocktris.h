@@ -25,6 +25,7 @@
 #include <array>
 #include <utility>
 #include <memory>
+#include <cmath>
 
 /////////////////////////////////
 //    Local folder includes    //
@@ -97,6 +98,7 @@ private:
     void CalculateHardDropPreview();
     void SetupOutline(sf::RectangleShape& sfRect, float fxOffset, float fyOffset);
     void DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz);
+    void DrawTetrimino(std::shared_ptr<Tetrimino> pttMino, sf::IntRect sfBoundingRect);
     void CheckLineClears();
     void DrawPreviewAndHeld();
     void DrawTetriminoInBox(
@@ -105,8 +107,17 @@ private:
 	sf::Vector2f sfCenter, 
 	float fVerticalOffset
     );
-    void UpdateLinesText();
+    void UpdateText();
+    void RecalculateLevel();
+    unsigned int CalculateScore(bool bFour, bool bTriple, bool bDouble, int nSingles);
     bool LineBundle(int nLines);
+    float LevelCurveFunction(int nLevel);
+
+    template<typename Iter>
+    void ReassignDigits(Iter itFirst, Iter itLast, size_t stLen, unsigned long long ullNum);
+
+    template<typename Iter>
+    void SetupDigits(Iter itFirst, Iter itLast, float yOffset);
 
     // Data structures representing the state of the game and inputs
     Board m_aLogicalBoard;
@@ -148,15 +159,19 @@ private:
     bool m_bRefreshPreview = true;
 
     // Timers and speeds
-    unsigned int m_unStateInterval = 15;
+    unsigned int m_unStateInterval = 60;
     unsigned int m_unMoveInterval = 10;
     unsigned long long m_ullTetriminoMoveTimer = 1;
     unsigned long long m_ullGameTicks = 1;
 
     // Player statistics
     unsigned long long m_ullPoints = 0;
-    unsigned int m_unLevel = 0;
+    unsigned int m_unLevel = 1;
     unsigned int m_unLinesCleared = 0;
+
+    // Per-update statistics
+    unsigned int m_unCellsFastDropped = 0;
+    unsigned int m_unCellsHardDropped = 0;
 public:
     // Translates logical array coordinates to screen coordinates -- used for blocks only
     static sf::Vector2f LogicalCoordsToScreenCoords(int xLogicalCoordinate, int yLogicalCoordinate);
@@ -166,5 +181,34 @@ public:
     BlockTris();
     ~BlockTris();
 };
+
+template<typename Iter>
+void BlockTris::ReassignDigits(Iter itFirst, Iter itLast, size_t stLen, unsigned long long ullNum) {
+    std::vector<unsigned int> vDigits;
+    unsigned long long ullNumCopy = ullNum;
+
+    for (int i = 0; i < stLen; i++) {
+	vDigits.push_back(ullNumCopy % 10);
+	ullNumCopy /= 10;
+    };
+
+    for (int i = 0; itFirst != itLast; itFirst++) {
+	itFirst->setTextureRect(sf::IntRect(
+	    vDigits[stLen - 1 - i] * FontWidth, 0, FontWidth, FontHeight
+	));
+	i++;
+    }
+}
+
+template<typename Iter>
+void BlockTris::SetupDigits(Iter itFirst, Iter itLast, float yOffset) {
+    float xfOffset = 0;
+    for (; itFirst != itLast; itFirst++) {
+	itFirst->setPosition(FirstDigitLineX + xfOffset, FirstDigitLineY + yOffset);
+	itFirst->setTexture(m_sfDigitsTexture);
+	itFirst->setTextureRect(sf::IntRect(0, 0, FontWidth, FontHeight));
+	xfOffset += FontWidth;
+    }
+}
 
 #endif

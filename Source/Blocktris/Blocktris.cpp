@@ -31,29 +31,30 @@ bool BlockTris::OnInitialize() {
 
     m_sfBackground.setTexture(m_sfBgTexture, true);
 
-    float xfOffset = 0.0f;
-    for (auto& sfSprite : m_asfScoreSprites) {
-	sfSprite.setPosition(FirstDigitLineX + xfOffset, FirstDigitLineY);
-	sfSprite.setTexture(m_sfDigitsTexture);
-	sfSprite.setTextureRect(sf::IntRect(0, 0, FontWidth, FontHeight));
-	xfOffset += FontWidth;
-    }
+    SetupDigits<std::array<sf::Sprite, 7>::iterator>(
+	    m_asfScoreSprites.begin(),
+	    m_asfScoreSprites.end(),
+	    0.0f
+	);
 
-    xfOffset = 0.0f;
-    for (auto& sfSprite : m_asfLevelSprites) {
-	sfSprite.setPosition(FirstDigitLineX + xfOffset, FirstDigitLineY + DigitLineGap);
-	sfSprite.setTexture(m_sfDigitsTexture);
-	sfSprite.setTextureRect(sf::IntRect(0, 0, FontWidth, FontHeight));
-	xfOffset += FontWidth;
-    }
+    SetupDigits<std::array<sf::Sprite, 3>::iterator>(
+	    m_asfLevelSprites.begin(),
+	    m_asfLevelSprites.end(),
+	    DigitLineGap
+	);
 
-    xfOffset = 0.0f;
-    for (auto& sfSprite : m_asfLinesSprites) {
-	sfSprite.setPosition(FirstDigitLineX + xfOffset, FirstDigitLineY + 2.0f * DigitLineGap);
-	sfSprite.setTexture(m_sfDigitsTexture);
-	sfSprite.setTextureRect(sf::IntRect(0, 0, FontWidth, FontHeight));
-	xfOffset += FontWidth;
-    }
+    SetupDigits<std::array<sf::Sprite, 3>::iterator>(
+	    m_asfLinesSprites.begin(),
+	    m_asfLinesSprites.end(),
+	    2.0f * DigitLineGap
+	);
+
+    ReassignDigits<std::array<sf::Sprite, 3>::iterator>(
+	    m_asfLevelSprites.begin(),
+	    m_asfLevelSprites.end(),
+	    m_asfLevelSprites.size(),
+	    m_unLevel
+	);
 
     m_pvbWaitingBlocks = new VirtualBag();
 
@@ -93,8 +94,8 @@ bool BlockTris::OnInitialize() {
 
 bool BlockTris::OnUpdate(float fFrameTime) {
     /*-----------------------------------------------------------|
-    |  The game will be locked at 30 fps, processing the states  |
-    |  every 15 ticks (~500 ms). Every update call advances the  |
+    |  The game will be locked at 60 fps, processing the states  |
+    |  every 31 ticks (~500 ms). Every update call advances the  |
     |  tick counter by 1.                                        |
     |-----------------------------------------------------------*/
 
@@ -108,7 +109,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     bool bStateKeyPressed = false;
     bool bJustEnteredPause = false;
 
-    if (m_gsState != GameStates::Pause) {
+    if (m_gsState != GameStates::Pause && m_gsState != GameStates::GameOver) {
 	if (bPauseKeyReleased) {
 	    m_bSkipInput = true;
 
@@ -133,7 +134,12 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    bStateKeyPressed = true;
 	}
 
-	if (bHardDropKeyReleased && !bStateKeyPressed) {
+	if (bHardDropKeyReleased && !bStateKeyPressed && m_gsState == GameStates::BlockFalling) {
+	    auto aActiveMinoCoords = m_pActiveTetrimino->GetLogicalCoords()[0];
+	    auto aHardDropMinoCoords = m_pHardDropPreview->GetLogicalCoords()[0];
+
+	    m_unCellsHardDropped = aHardDropMinoCoords.y - aActiveMinoCoords.y;
+
 	    std::swap(m_pActiveTetrimino, m_pHardDropPreview);
 
 	    for (auto& sfShape : m_pActiveTetrimino->GetPieceShapes()) {
@@ -158,9 +164,9 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	if (bDownIsPressed &&
 	    m_gsState != GameStates::BlockGeneration &&
 	    m_gsState != GameStates::BlockHit) {
-	    m_unStateInterval = 1;
+	    m_unStateInterval = 2;
 	} else {
-	    m_unStateInterval = 15;
+	    m_unStateInterval = std::round(60.0f * LevelCurveFunction(m_unLevel));
 	}
 
 	/*--------------------------------------------------------------------------------|
@@ -257,9 +263,13 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    if (m_pActiveTetrimino)
 		m_bAlreadyPressedHeld = false;
 
+	    m_unCellsFastDropped = 0;
+	    m_unCellsHardDropped = 0;
+
 	    m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
 	    m_aPreviewTetriminos = m_pvbWaitingBlocks->PeekNextPieces();
 	    m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
+	    CalculateHardDropPreview();
 
 	    m_bRefreshPreview = true;
 
@@ -277,7 +287,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 		int yTest = vTetriminoLogicalCoords[i].y + 1;
 
 		// If we have a vertical hit, we switch to the hit state
-		if (yTest >= 20 || !m_aLogicalBoard[yTest][xTest].m_bHidden) {
+		if (yTest >= 20 || (yTest >= 0 && !m_aLogicalBoard[yTest][xTest].m_bHidden)) {
 		    m_gsState = GameStates::BlockHit;
 		    bVerticalCollision = true;
 		    break;
@@ -285,6 +295,9 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    }
 
 	    if (!bVerticalCollision) {
+		if (GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed)
+		    m_unCellsFastDropped++;
+
 		m_pActiveTetrimino->MoveDown();
 	    }
 	}
@@ -298,15 +311,31 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    |---------------------------------------------------------------*/
 
 	    m_bSkipInput = false;
+	    bool bBlockLandedOutside = false;
 
 	    sf::Color sfTetriminoColor = m_pActiveTetrimino->GetColor();
 
 	    for (auto& sfPileBlockLoc : m_pActiveTetrimino->GetLogicalCoords()) {
+		if (sfPileBlockLoc.y < 0) {
+		    bBlockLandedOutside = true;
+		    continue;
+		}
 		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_bHidden = false;
 		m_aRowMetaData[sfPileBlockLoc.y].first++;
 		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_sfBlockViz.setFillColor(
 		    sfTetriminoColor
 		);
+	    }
+
+	    if (bBlockLandedOutside) {
+		m_gsState = GameStates::GameOver;
+		for (auto& aRow : m_aLogicalBoard) {
+		    for (auto& pbBlock : aRow) {
+			if (!pbBlock.m_bHidden)
+			    pbBlock.m_sfBlockViz.setFillColor(sf::Color(128, 128, 128));
+		    }
+		}
+		break;
 	    }
 
 	    CheckLineClears();
@@ -317,7 +346,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	case GameStates::HoldPieceAttempt:
 	{
 	    std::swap(m_pHeldTetrimino, m_pActiveTetrimino);
-	    m_unStateInterval = 15;
+	    m_unStateInterval = std::round(60.0f * LevelCurveFunction(m_unLevel));
 
 	    if (!m_pActiveTetrimino) {
 		m_gsState = GameStates::BlockGeneration;
@@ -339,12 +368,18 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    if (bPauseKeyReleased && !bJustEnteredPause) {
 		m_bSkipInput = false;
 		m_gsState = m_gsSavedState;
-		m_unStateInterval = 15;
+		m_unStateInterval = std::round(60.0f * LevelCurveFunction(m_unLevel));
 	    }
 
 	    bJustEnteredPause = false;
 	}
 	    break;
+	case GameStates::GameOver:
+	{
+	    // Stick aroung here forever
+	    m_unStateInterval = 0;
+	}
+	break;
 	default:
 	    // Something has gone very wrong if we end up here
 	    break;
@@ -364,8 +399,8 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 
     if (m_gsState != GameStates::BlockGeneration) {
 	if (m_gsState != GameStates::Pause)
-	    DrawTetrimino(m_pHardDropPreview->GetPieceShapes());
-	DrawTetrimino(m_pActiveTetrimino->GetPieceShapes());
+	    DrawTetrimino(m_pHardDropPreview, sf::IntRect(0, 0, 10, 20));
+	DrawTetrimino(m_pActiveTetrimino, sf::IntRect(0, 0, 10, 20));
     }
 
     for (auto& sfShape : m_asfScoreSprites) {
@@ -403,7 +438,7 @@ void BlockTris::CalculateHardDropPreview() {
 	    int xTest = vTetriminoLogicalCoords[i].x;
 	    int yTest = vTetriminoLogicalCoords[i].y + 1;
 
-	    if (yTest >= 20 || !m_aLogicalBoard[yTest][xTest].m_bHidden) {
+	    if (yTest >= 20 || (yTest >= 0 && !m_aLogicalBoard[yTest][xTest].m_bHidden)) {
 		bVerticalCollision = true;
 		break;
 	    }
@@ -428,6 +463,15 @@ void BlockTris::SetupOutline(sf::RectangleShape& sfRect, float fxOffset, float f
     sfRect.setPosition(fxOffset, fyOffset);
 }
 
+void BlockTris::DrawTetrimino(std::shared_ptr<Tetrimino> pttMino, sf::IntRect sfBoundingRect) {
+    auto itMinoLogicalCoord = pttMino->GetLogicalCoords().begin();
+    for (auto& sfBlock : pttMino->GetPieceShapes()) {
+	if (itMinoLogicalCoord->y >= 0)
+	    PushDrawableObject(&sfBlock);
+	itMinoLogicalCoord++;
+    }
+}
+
 void BlockTris::DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz) {
     for (auto& sfBlock : aBlocksViz) {
 	PushDrawableObject(&sfBlock);
@@ -436,15 +480,20 @@ void BlockTris::DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz) {
 
 void BlockTris::CheckLineClears() {
     bool bLinesCleared = false;
-    bool bLinesClearedSingle = false;
+    bool bFourClear = false;
+    bool bTripleClear = false;
+    bool bDoubleClear = false;
+    int nSinglesClear = 0;
 
-    bLinesCleared = LineBundle(4) || LineBundle(3);
+    bFourClear = LineBundle(4);
+    bTripleClear = LineBundle(3);
     
+    bLinesCleared = bFourClear || bTripleClear;
+
     if (!bLinesCleared) {
-	bLinesCleared = LineBundle(2);
-	bLinesClearedSingle = LineBundle(1);
-	bLinesCleared = bLinesCleared || bLinesClearedSingle;
-	LineBundle(1);
+	bDoubleClear = LineBundle(2);
+	nSinglesClear = LineBundle(1) + LineBundle(1);
+	bLinesCleared = bDoubleClear || nSinglesClear;
     }
 
     if (bLinesCleared) {
@@ -477,10 +526,14 @@ void BlockTris::CheckLineClears() {
 	    }
 	}
 
+	int nPrevLinesCleared = m_unLinesCleared;
 	m_unLinesCleared += nLinesCleared;
+	RecalculateLevel();
 
-	UpdateLinesText();
     }
+
+    m_ullPoints += CalculateScore(bFourClear, bTripleClear, bDoubleClear, nSinglesClear);
+    UpdateText();
 }
 
 void BlockTris::DrawPreviewAndHeld() {
@@ -556,23 +609,48 @@ void BlockTris::DrawTetriminoInBox(
     }
 }
 
-void BlockTris::UpdateLinesText() {
+void BlockTris::UpdateText() {
     if (m_unLinesCleared > 999)
 	m_unLinesCleared = 999;
 
-    std::vector<unsigned int> vDigits;
-    unsigned int unLinesCopy = m_unLinesCleared;
+    if (m_unLevel > 999)
+	m_unLevel = 999;
 
-    for (int i = 0; i < 3; i++) {
-	vDigits.push_back(unLinesCopy % 10);
-	unLinesCopy /= 10;
-    }
+    if (m_ullPoints > 9999999)
+	m_ullPoints = 9999999;
 
-    for (int i = 0; i < 3; i++) {
-	m_asfLinesSprites[i].setTextureRect(sf::IntRect(
-	    vDigits[2 - i] * FontWidth, 0, FontWidth, FontHeight
-	));
+    ReassignDigits<std::array<sf::Sprite, 3>::iterator>(
+	    m_asfLinesSprites.begin(),
+	    m_asfLinesSprites.end(),
+	    m_asfLinesSprites.size(),
+	    m_unLinesCleared
+	);
+
+    ReassignDigits<std::array<sf::Sprite, 3>::iterator>(
+	    m_asfLevelSprites.begin(),
+	    m_asfLevelSprites.end(),
+	    m_asfLevelSprites.size(),
+	    m_unLevel
+	);
+
+    ReassignDigits<std::array<sf::Sprite, 7>::iterator>(
+	    m_asfScoreSprites.begin(),
+	    m_asfScoreSprites.end(),
+	    m_asfScoreSprites.size(),
+	    m_ullPoints
+	);
+}
+
+void BlockTris::RecalculateLevel() {
+    if (m_unLinesCleared / (m_unLevel * 10) > 0) {
+	m_unLevel++;
+	m_unStateInterval = std::round(60.0f * LevelCurveFunction(m_unLevel));
     }
+}
+
+unsigned int BlockTris::CalculateScore(bool bFour, bool bTriple, bool bDouble, int nSingles) {
+    unsigned int unSoftAndHardDropPts = m_unCellsFastDropped + 2.0 * m_unCellsHardDropped;
+    return (100 * nSingles + 300 * bDouble + 500 * bTriple + 800 * bFour) * m_unLevel + unSoftAndHardDropPts;
 }
 
 bool BlockTris::LineBundle(int nLines) {
@@ -602,6 +680,10 @@ bool BlockTris::LineBundle(int nLines) {
     return bHasBundle;
 }
 
+float BlockTris::LevelCurveFunction(int nLevel) {
+    return std::pow(0.8 - ((nLevel - 1.0) * 0.007), nLevel - 1.0);
+}
+
 sf::Vector2f BlockTris::LogicalCoordsToScreenCoords(int xLogicalCoord, int yLogicalCoord) {
     float xfScreenCoords = BoardOffsetX + xLogicalCoord * SquareSize;
 
@@ -623,7 +705,7 @@ sf::Vector2f BlockTris::LogicalCoordsToScreenCoords(sf::Vector2i& sfLogicalCoord
 }
 
 BlockTris::BlockTris()
-    : GameApp(sf::VideoMode(ScreenWidth, ScreenHeight), "Blocktris", FPSControl::Locked30) {
+    : GameApp(sf::VideoMode(ScreenWidth, ScreenHeight), "Blocktris", FPSControl::Locked60) {
 }
 
 BlockTris::~BlockTris() {

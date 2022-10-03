@@ -15,13 +15,13 @@ private:
     // Y X: 0 1 2 3 *4* 5 6 7 8 9
     // 0
     // 1
-    const std::vector<sf::Vector2i> m_vI_Piece = { {3, 0}, {4, 0}, {5, 0}, {6, 0} };
-    const std::vector<sf::Vector2i> m_vJ_Piece = { {3, 0}, {3, 1}, {4, 1}, {5, 1} };
-    const std::vector<sf::Vector2i> m_vL_Piece = { {5, 0}, {3, 1}, {4, 1}, {5, 1} };
-    const std::vector<sf::Vector2i> m_vO_Piece = { {4, 0}, {5, 0}, {4, 1}, {5, 1} };
-    const std::vector<sf::Vector2i> m_vS_Piece = { {4, 0}, {5, 0}, {3, 1}, {4, 1} };
-    const std::vector<sf::Vector2i> m_vT_Piece = { {4, 0}, {3, 1}, {4, 1}, {5, 1} };
-    const std::vector<sf::Vector2i> m_vZ_Piece = { {3, 0}, {4, 0}, {4, 1}, {5, 1} };
+    const std::vector<sf::Vector2i> m_vI_Piece = { {3, -2}, {4, -2}, {5, -2}, {6, -2} };
+    const std::vector<sf::Vector2i> m_vJ_Piece = { {3, -2}, {3, -1}, {4, -1}, {5, -1} };
+    const std::vector<sf::Vector2i> m_vL_Piece = { {5, -2}, {3, -1}, {4, -1}, {5, -1} };
+    const std::vector<sf::Vector2i> m_vO_Piece = { {4, -2}, {5, -2}, {4, -1}, {5, -1} };
+    const std::vector<sf::Vector2i> m_vS_Piece = { {4, -2}, {5, -2}, {3, -1}, {4, -1} };
+    const std::vector<sf::Vector2i> m_vT_Piece = { {4, -2}, {3, -1}, {4, -1}, {5, -1} };
+    const std::vector<sf::Vector2i> m_vZ_Piece = { {3, -2}, {4, -2}, {4, -1}, {5, -1} };
 
     const std::array<std::vector<sf::Vector2i>, 7> m_aPieces = {
 	m_vI_Piece,
@@ -47,13 +47,13 @@ private:
     };
 
     const std::array<sf::Vector2f, 7> m_aPiecePivots = {
-	sf::Vector2f(4.5f, 0.5f),
-	sf::Vector2f(4.0f, 1.0f),
-	sf::Vector2f(4.0f, 1.0f),
-	sf::Vector2f(4.5f, 1.0f), // The O-piece now matters, for drawing a held piece...
-	sf::Vector2f(4.0f, 1.0f),
-	sf::Vector2f(4.0f, 1.0f),
-	sf::Vector2f(4.0f, 1.0f),
+	sf::Vector2f(4.5f, -1.5f),
+	sf::Vector2f(4.0f, -1.0f),
+	sf::Vector2f(4.0f, -1.0f),
+	sf::Vector2f(4.5f, -1.0f), // The O-piece now matters, for drawing a held piece...
+	sf::Vector2f(4.0f, -1.0f),
+	sf::Vector2f(4.0f, -1.0f),
+	sf::Vector2f(4.0f, -1.0f),
     };
     
     std::array<sf::RectangleShape, 4> m_asfPieceViz;

@@ -215,11 +215,13 @@ void Tetrimino::RotateTetrimino(sf::Vector2f sfRotationCoefficents,
 	for (auto& sfLogicalCoord : vTetriminoCoords) {
 	    sfLogicalCoord += sfTranslationVector;
 	    if (
-		sfLogicalCoord.x < 0 ||
+		sfLogicalCoord.x <  0 ||
 		sfLogicalCoord.x >  9 ||
-		sfLogicalCoord.y < 0 ||
 		sfLogicalCoord.y > 19 ||
-		!brdGameField[sfLogicalCoord.y][sfLogicalCoord.x].m_bHidden
+		(
+		    sfLogicalCoord.y >= 0 && 
+		    !brdGameField[sfLogicalCoord.y][sfLogicalCoord.x].m_bHidden
+		)
 	    ) {
 		bCanRotate = false;
 	    }
@@ -254,7 +256,7 @@ void Tetrimino::TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brd
 	if (bLeft) sfCoords.x--;
 	if (bRight) sfCoords.x++;
 
-	if (sfCoords.x < 0 || sfCoords.x > 9 || !brdGameField[sfCoords.y][sfCoords.x].m_bHidden) {
+	if (sfCoords.x < 0 || sfCoords.x > 9 || (sfCoords.y >= 0 && !brdGameField[sfCoords.y][sfCoords.x].m_bHidden)) {
 	    bHorizontalCollision = true;
 	    break;
 	}
