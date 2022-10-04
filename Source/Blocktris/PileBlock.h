@@ -29,15 +29,29 @@
 /////////////////////////////////
 #include <SFML/Graphics.hpp>
 
+/////////////////////////////////
+//    Local folder includes    //
+/////////////////////////////////
+#include "PieceConstants.h"
+
 struct PileBlock {
     bool m_bHidden = true;
     sf::RectangleShape m_sfBlockViz;
+    static sf::Texture sm_sfBlockTexture;
 };
-
 
 /////////////////////////////////
 //          Typedefs           //
 /////////////////////////////////
 typedef std::array<std::array<PileBlock, 10>, 20> Board;
+
+/////////////////////////////////
+//     Function Definitons     //
+/////////////////////////////////
+
+// Translates logical array coordinates to screen coordinates -- used for blocks only
+sf::Vector2f LogicalCoordsToScreenCoords(int xLogicalCoord, int yLogicalCoord);
+sf::Vector2f LogicalCoordsToScreenCoords(float xLogicalCoord, float yLogicalCoord);
+sf::Vector2f LogicalCoordsToScreenCoords(sf::Vector2i& sfLogicalCoords);
 
 #endif

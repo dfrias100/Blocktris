@@ -67,6 +67,8 @@ private:
     const sf::Vector2i ReturnWallKickVector(int nPrevOrientation, int nNewOrientation, int nTestNo);
     const sf::Vector2i ReturnWallKickVectorIPiece(int nPrevOrientation, int nNewOrientation, int nTestNo);
 
+    static sf::Texture sm_sfBlockTexture;
+
 public:
     Tetrimino(PieceTypes ptType);
     
@@ -80,6 +82,7 @@ public:
     std::array<sf::RectangleShape, 4>& GetPieceShapes();
     sf::Vector2f GetPivot();
     sf::Color GetColor();
+    PieceTypes GetPieceType();
 };
 
 #endif

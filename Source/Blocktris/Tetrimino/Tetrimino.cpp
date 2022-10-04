@@ -41,6 +41,8 @@ const std::array<std::array<sf::Vector2i, 4>, 4> Tetrimino::m_aWallKickData = {
 |   0>>3 (-1, 0) ( 2, 0) (-1,  2) ( 2, -1)  |
 |------------------------------------------*/
 
+sf::Texture Tetrimino::sm_sfBlockTexture;
+
 const std::array<std::array<sf::Vector2i, 4>, 4> Tetrimino::m_aWallKickDataIPiece = {
     {
 	{ sf::Vector2i(-2, 0), sf::Vector2i( 1, 0), sf::Vector2i(-2,  1), sf::Vector2i( 1, -2) }, // 0 >> 1
@@ -141,12 +143,14 @@ Tetrimino::Tetrimino(PieceTypes ptType) {
 
     for (int i = 0; i < 4; i++) {
 	m_asfPieceViz[i].setPosition(
-	    BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
+	    LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
 	);
 	m_asfPieceViz[i].setFillColor(
-	    m_aPieceColors[static_cast<int>(ptType)]
+	    sf::Color::White
 	);
 	m_asfPieceViz[i].setSize(sf::Vector2f(SquareSize, SquareSize));
+	m_asfPieceViz[i].setTexture(&PileBlock::sm_sfBlockTexture);
+	m_asfPieceViz[i].setTextureRect(sf::IntRect(static_cast<int>(ptType) * SquareSize, 0, SquareSize, SquareSize));
     }
 }
 
@@ -235,7 +239,7 @@ void Tetrimino::RotateTetrimino(sf::Vector2f sfRotationCoefficents,
 	    m_vCurrentPiece = vTetriminoCoords;
 	    for (int i = 0; i < 4; i++) {
 		m_asfPieceViz[i].setPosition(
-		    BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
+		    LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
 		);
 	    }
 	    return;
@@ -269,7 +273,7 @@ void Tetrimino::TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brd
 	m_vCurrentPiece = vTetriminoLogicalCoordsTest;
 	for (int i = 0; i < 4; i++) {
 	    m_asfPieceViz[i].setPosition(
-		BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
+		LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
 	    );
 	}
     }
@@ -291,13 +295,17 @@ sf::Color Tetrimino::GetColor() {
     return m_aPieceColors[static_cast<int>(m_CurrentPieceType)];
 }
 
+PieceTypes Tetrimino::GetPieceType() {
+    return m_CurrentPieceType;
+}
+
 void Tetrimino::MoveDown() {
     TranslatePivot({ 0, 1 });
 
     for (int i = 0; i < 4; i++) {
 	m_vCurrentPiece[i].y++;
 	m_asfPieceViz[i].setPosition(
-	    BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
+	    LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
 	);
     }
 }
@@ -308,7 +316,7 @@ void Tetrimino::ResetPieceAndPivot() {
 
     for (int i = 0; i < 4; i++) {
 	m_asfPieceViz[i].setPosition(
-	    BlockTris::LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
+	    LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
 	);
     }
 }

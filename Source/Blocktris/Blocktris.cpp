@@ -28,6 +28,7 @@ bool BlockTris::OnInitialize() {
 
     m_sfBgTexture.loadFromFile("bg.png");
     m_sfDigitsTexture.loadFromFile("digit_atlas.png");
+    PileBlock::sm_sfBlockTexture.loadFromFile("block.png");
 
     m_sfBackground.setTexture(m_sfBgTexture, true);
 
@@ -76,7 +77,8 @@ bool BlockTris::OnInitialize() {
 	    sf::RectangleShape* psfShape = &m_aLogicalBoard[y][x].m_sfBlockViz;
 	    psfShape->setSize(sf::Vector2f(SquareSize, SquareSize));
 	    psfShape->setPosition(LogicalCoordsToScreenCoords(x, y));
-	    psfShape->setFillColor(sf::Color::Red);
+	    psfShape->setFillColor(sf::Color::White);
+	    psfShape->setTexture(&PileBlock::sm_sfBlockTexture);
 	}
     }
 
@@ -134,7 +136,14 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    bStateKeyPressed = true;
 	}
 
-	if (bHardDropKeyReleased && !bStateKeyPressed && m_gsState == GameStates::BlockFalling) {
+	if (
+	    bHardDropKeyReleased && 
+	    !bStateKeyPressed && 
+		(
+		    m_gsState == GameStates::BlockFalling ||
+		    m_gsState == GameStates::BlockLockDelay
+		)
+	    ) {
 	    auto aActiveMinoCoords = m_pActiveTetrimino->GetLogicalCoords()[0];
 	    auto aHardDropMinoCoords = m_pHardDropPreview->GetLogicalCoords()[0];
 
@@ -214,7 +223,8 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	m_aPrevFrameKeyStates = m_aCurrFrameKeyStates;
 
 	// Process input if the timer is tripped
-	if (m_gsState == GameStates::BlockFalling
+	if ((m_gsState == GameStates::BlockFalling ||
+	    m_gsState ==  GameStates::BlockLockDelay)
 	    && m_ullTetriminoMoveTimer == 0) {
 	    m_pActiveTetrimino->TranslateTetriminoHorizontal(
 		m_bKeyHeldLeft || m_bKeyPressedInitialLeft,
@@ -288,7 +298,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 
 		// If we have a vertical hit, we switch to the hit state
 		if (yTest >= 20 || (yTest >= 0 && !m_aLogicalBoard[yTest][xTest].m_bHidden)) {
-		    m_gsState = GameStates::BlockHit;
+		    m_gsState = GameStates::BlockLockDelay;
 		    bVerticalCollision = true;
 		    break;
 		}
@@ -314,27 +324,33 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    bool bBlockLandedOutside = false;
 
 	    sf::Color sfTetriminoColor = m_pActiveTetrimino->GetColor();
+	    PieceTypes ptTetrimino = m_pActiveTetrimino->GetPieceType();
 
 	    for (auto& sfPileBlockLoc : m_pActiveTetrimino->GetLogicalCoords()) {
+
 		if (sfPileBlockLoc.y < 0) {
 		    bBlockLandedOutside = true;
 		    continue;
 		}
+
 		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_bHidden = false;
 		m_aRowMetaData[sfPileBlockLoc.y].first++;
-		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_sfBlockViz.setFillColor(
-		    sfTetriminoColor
+		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_sfBlockViz.setTextureRect(
+		    sf::IntRect(static_cast<int>(ptTetrimino) * SquareSize, 0, SquareSize, SquareSize)
 		);
+
 	    }
 
 	    if (bBlockLandedOutside) {
 		m_gsState = GameStates::GameOver;
+
 		for (auto& aRow : m_aLogicalBoard) {
 		    for (auto& pbBlock : aRow) {
 			if (!pbBlock.m_bHidden)
 			    pbBlock.m_sfBlockViz.setFillColor(sf::Color(128, 128, 128));
 		    }
 		}
+
 		break;
 	    }
 
@@ -363,6 +379,27 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    m_bHeldChanged = true;
 	}
 	    break;
+	case GameStates::BlockLockDelay:
+	{
+	    auto& sfActiveCoords = m_pActiveTetrimino->GetLogicalCoords();
+	    auto& sfHardDropCoords = m_pHardDropPreview->GetLogicalCoords();
+
+	    for (int i = 0; i < 4; i++) {
+		if (sfActiveCoords[i] != sfHardDropCoords[i]) {
+		    m_gsState = GameStates::BlockFalling;
+		    m_ullLockDelayTimer = 5;
+		    break;
+		}
+	    }
+
+	    if (m_ullLockDelayTimer == 0) {
+		m_ullLockDelayTimer = 5;
+		m_gsState = GameStates::BlockHit;
+	    } else {
+		m_ullLockDelayTimer--;
+	    }
+	}
+	    break;
 	case GameStates::Pause:
 	{
 	    if (bPauseKeyReleased && !bJustEnteredPause) {
@@ -376,7 +413,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    break;
 	case GameStates::GameOver:
 	{
-	    // Stick aroung here forever
+	    // Stick around here forever (for now)
 	    m_unStateInterval = 0;
 	}
 	break;
@@ -682,26 +719,6 @@ bool BlockTris::LineBundle(int nLines) {
 
 float BlockTris::LevelCurveFunction(int nLevel) {
     return std::pow(0.8 - ((nLevel - 1.0) * 0.007), nLevel - 1.0);
-}
-
-sf::Vector2f BlockTris::LogicalCoordsToScreenCoords(int xLogicalCoord, int yLogicalCoord) {
-    float xfScreenCoords = BoardOffsetX + xLogicalCoord * SquareSize;
-
-    float yfScreenCoords = BoardOffsetY + yLogicalCoord * SquareSize;
-
-    return sf::Vector2f(xfScreenCoords, yfScreenCoords);
-}
-
-sf::Vector2f BlockTris::LogicalCoordsToScreenCoords(float xLogicalCoord, float yLogicalCoord) {
-    float xfScreenCoords = BoardOffsetX + xLogicalCoord * SquareSize;
-
-    float yfScreenCoords = BoardOffsetY + yLogicalCoord * SquareSize;
-
-    return sf::Vector2f(xfScreenCoords, yfScreenCoords);
-}
-
-sf::Vector2f BlockTris::LogicalCoordsToScreenCoords(sf::Vector2i& sfLogicalCoords) {
-    return LogicalCoordsToScreenCoords(sfLogicalCoords.x, sfLogicalCoords.y);
 }
 
 BlockTris::BlockTris()

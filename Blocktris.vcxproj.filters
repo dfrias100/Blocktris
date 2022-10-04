@@ -30,6 +30,9 @@
     <ClCompile Include="Source\Blocktris\VirtualBag\VirtualBag.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Blocktris\PileBlock.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\GameApp\GameApp.h">
