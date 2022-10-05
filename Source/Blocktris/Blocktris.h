@@ -136,10 +136,12 @@ private:
 
     // Timers and speeds
     unsigned int m_unStateInterval = 60;
-    unsigned int m_unMoveInterval = 10;
+    unsigned int m_unFallInterval = 60;
+    unsigned int m_unMoveInterval = 1;
     unsigned long long m_ullTetriminoMoveTimer = 1;
+    unsigned long long m_ullLockDelayTimer = 30;
+    unsigned long long m_ullBlockCollisionTimer = 10;
     unsigned long long m_ullGameTicks = 1;
-    unsigned long long m_ullLockDelayTimer = 5;
 
     // Player statistics
     unsigned long long m_ullPoints = 0;

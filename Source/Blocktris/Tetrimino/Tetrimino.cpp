@@ -158,10 +158,10 @@ void Tetrimino::TranslatePivot(sf::Vector2f sfTranslation) {
     m_sfPiecePivot += sfTranslation;
 }
 
-void Tetrimino::RotateTetrimino(sf::Vector2f sfRotationCoefficents, 
+bool Tetrimino::RotateTetrimino(sf::Vector2f sfRotationCoefficents, 
     Board& brdGameField) {
     if (m_CurrentPieceType == PieceTypes::O_Piece)
-	return;
+	return false;
 
     std::vector<sf::Vector2i> vTetriminoCoords;
 
@@ -242,27 +242,31 @@ void Tetrimino::RotateTetrimino(sf::Vector2f sfRotationCoefficents,
 		    LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
 		);
 	    }
-	    return;
+	    return true;
 	} else {
 	    for (auto& sfLogicalCoord : vTetriminoCoords) {
 		sfLogicalCoord -= sfTranslationVector;
 	    }
 	}
     }
+
+    return false;
 }
 
-void Tetrimino::TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brdGameField) {
+bool Tetrimino::TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brdGameField) {
+    if ((!bLeft && !bRight) || (bLeft && bRight))
+	return false;
+
     auto vTetriminoLogicalCoordsTest = m_vCurrentPiece;
     bool bHorizontalCollision = false;
 
     for (auto& sfCoords : vTetriminoLogicalCoordsTest) {
-	// Clamp the new x values to allowable values
 	if (bLeft) sfCoords.x--;
 	if (bRight) sfCoords.x++;
 
 	if (sfCoords.x < 0 || sfCoords.x > 9 || (sfCoords.y >= 0 && !brdGameField[sfCoords.y][sfCoords.x].m_bHidden)) {
 	    bHorizontalCollision = true;
-	    break;
+	    return false;
 	}
     }
 
@@ -277,6 +281,8 @@ void Tetrimino::TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brd
 	    );
 	}
     }
+
+    return true;
 }
 
 const std::vector<sf::Vector2i>& Tetrimino::GetLogicalCoords() {

@@ -75,9 +75,9 @@ public:
     void MoveDown();
     void ResetPieceAndPivot();
     void TranslatePivot(sf::Vector2f sfTranslation);
-    void RotateTetrimino(sf::Vector2f sfRotationCoefficents, Board& brdGameField);
     void SetPivot(sf::Vector2f sfPivotCoords);
-    void TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brdGameField);
+    bool TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brdGameField);
+    bool RotateTetrimino(sf::Vector2f sfRotationCoefficents, Board& brdGameField);
     const std::vector<sf::Vector2i>& GetLogicalCoords();
     std::array<sf::RectangleShape, 4>& GetPieceShapes();
     sf::Vector2f GetPivot();

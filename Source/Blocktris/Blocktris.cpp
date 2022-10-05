@@ -97,8 +97,8 @@ bool BlockTris::OnInitialize() {
 bool BlockTris::OnUpdate(float fFrameTime) {
     /*-----------------------------------------------------------|
     |  The game will be locked at 60 fps, processing the states  |
-    |  every 31 ticks (~500 ms). Every update call advances the  |
-    |  tick counter by 1.                                        |
+    |  every 60 ticks (~1s). Every update call advances the tick |
+    |  counter by 1.                                             |
     |-----------------------------------------------------------*/
 
     if (m_gsState != GameStates::BlockGeneration)
@@ -139,10 +139,8 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	if (
 	    bHardDropKeyReleased && 
 	    !bStateKeyPressed && 
-		(
-		    m_gsState == GameStates::BlockFalling ||
-		    m_gsState == GameStates::BlockLockDelay
-		)
+		(m_gsState == GameStates::BlockFalling ||
+		 m_gsState == GameStates::BlockLockDelay)
 	    ) {
 	    auto aActiveMinoCoords = m_pActiveTetrimino->GetLogicalCoords()[0];
 	    auto aHardDropMinoCoords = m_pHardDropPreview->GetLogicalCoords()[0];
@@ -170,10 +168,11 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	bool bDownIsPressed = GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed;
 
 	// Fast drop control
+	// TODO: have this not be calculated every frame 
 	if (bDownIsPressed &&
 	    m_gsState != GameStates::BlockGeneration &&
 	    m_gsState != GameStates::BlockHit) {
-	    m_unStateInterval = 2;
+	    m_unStateInterval = 0.075f * std::round(60.0f * LevelCurveFunction(m_unLevel));
 	} else {
 	    m_unStateInterval = std::round(60.0f * LevelCurveFunction(m_unLevel));
 	}
@@ -223,17 +222,29 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	m_aPrevFrameKeyStates = m_aCurrFrameKeyStates;
 
 	// Process input if the timer is tripped
-	if ((m_gsState == GameStates::BlockFalling ||
-	    m_gsState ==  GameStates::BlockLockDelay)
-	    && m_ullTetriminoMoveTimer == 0) {
-	    m_pActiveTetrimino->TranslateTetriminoHorizontal(
-		m_bKeyHeldLeft || m_bKeyPressedInitialLeft,
-		m_bKeyHeldRight || m_bKeyPressedInitialRight,
-		m_aLogicalBoard
-	    );
+	if (
+	    (m_gsState == GameStates::BlockFalling ||
+	    m_gsState == GameStates::BlockLockDelay)
+	    && m_ullTetriminoMoveTimer == 0
+	) {
+	    
+	    if (
+		m_pActiveTetrimino->TranslateTetriminoHorizontal(
+		    m_bKeyHeldLeft || m_bKeyPressedInitialLeft,
+		    m_bKeyHeldRight || m_bKeyPressedInitialRight,
+		    m_aLogicalBoard
+		)
+	    ) {
+		m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
+		CalculateHardDropPreview();
+		m_ullLockDelayTimer = m_gsState == GameStates::BlockLockDelay ? 30 : m_ullLockDelayTimer;
+	    }
 
-	    m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
-	    CalculateHardDropPreview();
+	    if (m_bKeyPressedInitialLeft || m_bKeyPressedInitialRight) {
+		m_unMoveInterval = 20;
+	    } else {
+		m_unMoveInterval = 1;
+	    }
 	}
 
 	bool bLeftRotation = GetKeyStatus(sf::Keyboard::Z) == KeyStatus::Pressed;
@@ -243,10 +254,11 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	if (bRotationKeyPressed && !m_bRotationKeyHeld && m_gsState != GameStates::BlockHit) {
 	    sf::Vector2f sfRotationCoefficients = bLeftRotation ?
 		sf::Vector2f(-1.0f, 1.0f) : sf::Vector2f(1.0f, -1.0f);
-	    m_pActiveTetrimino->RotateTetrimino(sfRotationCoefficients, m_aLogicalBoard);
-
-	    m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
-	    CalculateHardDropPreview();
+	    if (m_pActiveTetrimino->RotateTetrimino(sfRotationCoefficients, m_aLogicalBoard)) {
+		m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
+		CalculateHardDropPreview();
+		m_ullLockDelayTimer = m_gsState == GameStates::BlockLockDelay ? 30 : m_ullLockDelayTimer;
+	    }
 	    
 	    m_bRotationKeyHeld = true;
 	} else if (!bRotationKeyPressed) {
@@ -254,40 +266,41 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	}
     }
 
-    if (m_ullGameTicks % m_unStateInterval == 0) {
-	/*---------------------------------------------------------------------|
-	|    The game can be easily interpreted as a finite state machine.     |
-	|    Every time the tick counter is tripped, we process the current    |
-	|    or next state that should occur. For example, when we detect a    |
-	|    vertical collision, we should transition to the collision state   |
-	|    where it will contain the logic needed to add the tetrimino to    |
-	|    the pile. This greatly simplifies the logic needed to process     |
-	|    all the states that need the game could be in.                    |
-	|---------------------------------------------------------------------*/
+    /*---------------------------------------------------------------------|
+    |    The game can be easily interpreted as a finite state machine.     |
+    |    Every time the tick counter is tripped, we process the current    |
+    |    or next state that should occur. For example, when we detect a    |
+    |    vertical collision, we should transition to the collision state   |
+    |    where it will contain the logic needed to add the tetrimino to    |
+    |    the pile. This greatly simplifies the logic needed to process     |
+    |    all the states that need the game could be in.                    |
+    |---------------------------------------------------------------------*/
 
-	switch (m_gsState)
-	{
-	case GameStates::BlockGeneration:
-	{
-	    // Reset the position of our tetrimino now that we've thrown it into the pile
-	    if (m_pActiveTetrimino)
-		m_bAlreadyPressedHeld = false;
+    switch (m_gsState)
+    {
+    case GameStates::BlockGeneration:
+    {
+	// Reset the position of our tetrimino now that we've thrown it into the pile
+	if (m_pActiveTetrimino)
+	    m_bAlreadyPressedHeld = false;
 
-	    m_unCellsFastDropped = 0;
-	    m_unCellsHardDropped = 0;
+	m_unCellsFastDropped = 0;
+	m_unCellsHardDropped = 0;
 
-	    m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
-	    m_aPreviewTetriminos = m_pvbWaitingBlocks->PeekNextPieces();
-	    m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
-	    CalculateHardDropPreview();
+	m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
+	m_aPreviewTetriminos = m_pvbWaitingBlocks->PeekNextPieces();
+	m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
+	CalculateHardDropPreview();
 
-	    m_bRefreshPreview = true;
+	m_bRefreshPreview = true;
 
-	    m_gsState = GameStates::BlockFalling;
-	}
-	    break;
-	case GameStates::BlockFalling:
-	{
+	m_gsState = GameStates::BlockFalling;
+    }
+	break;
+    case GameStates::BlockFalling:
+    {
+	// TODO: fix level 15 crashing
+	if (m_ullGameTicks % m_unStateInterval == 0) {
 	    // Store the candidate coordinates
 	    auto& vTetriminoLogicalCoords = m_pActiveTetrimino->GetLogicalCoords();
 	    bool bVerticalCollision = false;
@@ -311,13 +324,15 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 		m_pActiveTetrimino->MoveDown();
 	    }
 	}
-	    break;
-	case GameStates::BlockHit:
-	{
+    }
+	break;
+    case GameStates::BlockHit:
+    {
+	if (m_ullBlockCollisionTimer == 0) {
 	    /*---------------------------------------------------------------|
-	    |	Take the tetrimino and "throw" its blocks onto the pile      |
-	    |	In this case, we make the blocks where the tetrimino rests   |
-	    |	visible in the logical board.                                |
+	    |   Take the tetrimino and "throw" its blocks onto the pile      |
+	    |   In this case, we make the blocks where the tetrimino rests   |
+	    |   visible in the logical board.                                |
 	    |---------------------------------------------------------------*/
 
 	    m_bSkipInput = false;
@@ -334,10 +349,10 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 		}
 
 		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_bHidden = false;
-		m_aRowMetaData[sfPileBlockLoc.y].first++;
 		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_sfBlockViz.setTextureRect(
 		    sf::IntRect(static_cast<int>(ptTetrimino) * SquareSize, 0, SquareSize, SquareSize)
 		);
+		m_aRowMetaData[sfPileBlockLoc.y].first++;
 
 	    }
 
@@ -357,70 +372,74 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    CheckLineClears();
 
 	    m_gsState = GameStates::BlockGeneration;
+	    m_ullBlockCollisionTimer = 10;
+	} else {
+	    m_ullBlockCollisionTimer--;
 	}
-	    break;
-	case GameStates::HoldPieceAttempt:
-	{
-	    std::swap(m_pHeldTetrimino, m_pActiveTetrimino);
-	    m_unStateInterval = std::round(60.0f * LevelCurveFunction(m_unLevel));
-
-	    if (!m_pActiveTetrimino) {
-		m_gsState = GameStates::BlockGeneration;
-		m_ullGameTicks = m_unStateInterval - 1;
-	    } else {
-		m_gsState = GameStates::BlockFalling;
-		m_pActiveTetrimino->ResetPieceAndPivot();
-
-		m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
-		CalculateHardDropPreview();
-	    }
-
-	    m_bSkipInput = false;
-	    m_bHeldChanged = true;
-	}
-	    break;
-	case GameStates::BlockLockDelay:
-	{
-	    auto& sfActiveCoords = m_pActiveTetrimino->GetLogicalCoords();
-	    auto& sfHardDropCoords = m_pHardDropPreview->GetLogicalCoords();
-
-	    for (int i = 0; i < 4; i++) {
-		if (sfActiveCoords[i] != sfHardDropCoords[i]) {
-		    m_gsState = GameStates::BlockFalling;
-		    m_ullLockDelayTimer = 5;
-		    break;
-		}
-	    }
-
-	    if (m_ullLockDelayTimer == 0) {
-		m_ullLockDelayTimer = 5;
-		m_gsState = GameStates::BlockHit;
-	    } else {
-		m_ullLockDelayTimer--;
-	    }
-	}
-	    break;
-	case GameStates::Pause:
-	{
-	    if (bPauseKeyReleased && !bJustEnteredPause) {
-		m_bSkipInput = false;
-		m_gsState = m_gsSavedState;
-		m_unStateInterval = std::round(60.0f * LevelCurveFunction(m_unLevel));
-	    }
-
-	    bJustEnteredPause = false;
-	}
-	    break;
-	case GameStates::GameOver:
-	{
-	    // Stick around here forever (for now)
-	    m_unStateInterval = 0;
-	}
+    }
 	break;
-	default:
-	    // Something has gone very wrong if we end up here
-	    break;
+    case GameStates::HoldPieceAttempt:
+    {
+	std::swap(m_pHeldTetrimino, m_pActiveTetrimino);
+	m_unStateInterval = std::round(60.0f * LevelCurveFunction(m_unLevel));
+
+	if (!m_pActiveTetrimino) {
+	    m_gsState = GameStates::BlockGeneration;
+	    m_ullGameTicks = m_unStateInterval - 1;
+	} else {
+	    m_gsState = GameStates::BlockFalling;
+	    m_pActiveTetrimino->ResetPieceAndPivot();
+
+	    m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
+	    CalculateHardDropPreview();
 	}
+
+	m_bSkipInput = false;
+	m_bHeldChanged = true;
+    }
+	break;
+    case GameStates::BlockLockDelay:
+    {
+	// TODO: implement lock delay decay
+	auto& sfActiveCoords = m_pActiveTetrimino->GetLogicalCoords();
+	auto& sfHardDropCoords = m_pHardDropPreview->GetLogicalCoords();
+
+	for (int i = 0; i < 4; i++) {
+	    if (sfActiveCoords[i] != sfHardDropCoords[i]) {
+		m_gsState = GameStates::BlockFalling;
+		m_ullLockDelayTimer = 30;
+		break;
+	    }
+	}
+
+	if (m_ullLockDelayTimer == 0) {
+	    m_ullLockDelayTimer = 30;
+	    m_gsState = GameStates::BlockHit;
+	} else {
+	    m_ullLockDelayTimer--;
+	}
+    }
+	break;
+    case GameStates::Pause:
+    {
+	if (bPauseKeyReleased && !bJustEnteredPause) {
+	    m_bSkipInput = false;
+	    m_gsState = m_gsSavedState;
+	    m_unStateInterval = std::round(60.0f * LevelCurveFunction(m_unLevel));
+	}
+
+	bJustEnteredPause = false;
+    }
+	break;
+    case GameStates::GameOver:
+    {
+	// Stick around here forever (for now)
+	m_unStateInterval = 0;
+    }
+    break;
+    default:
+	// Something has gone very wrong if we end up here
+	break;
     }
 
     // Advance the timers by 1 tick (1/30th of one second)
