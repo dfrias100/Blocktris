@@ -87,7 +87,7 @@ private:
     void RecalculateLevel();
     unsigned int CalculateScore(bool bFour, bool bTriple, bool bDouble, int nSingles);
     bool LineBundle(int nLines);
-    float LevelCurveFunction(int nLevel);
+    unsigned int LevelCurveFunction(unsigned int nLevel, unsigned int& nCellsToDrop);
 
     template<typename Iter>
     void ReassignDigits(Iter itFirst, Iter itLast, size_t stLen, unsigned long long ullNum);
@@ -136,11 +136,12 @@ private:
 
     // Timers and speeds
     unsigned int m_unStateInterval = 60;
+    unsigned int m_unLinesPerInterval = 1;
     unsigned int m_unFallInterval = 60;
     unsigned int m_unMoveInterval = 1;
     unsigned long long m_ullTetriminoMoveTimer = 1;
     unsigned long long m_ullLockDelayTimer = 30;
-    unsigned long long m_ullBlockCollisionTimer = 10;
+    unsigned long long m_ullBlockCollisionTimer = 15;
     unsigned long long m_ullGameTicks = 1;
 
     // Player statistics
