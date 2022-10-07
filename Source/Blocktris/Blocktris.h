@@ -33,6 +33,7 @@ class VirtualBag;
 #include <utility>
 #include <memory>
 #include <cmath>
+#include <string>
 
 /////////////////////////////////
 //    Local folder includes    //
@@ -42,10 +43,32 @@ class VirtualBag;
 #include "Tetrimino/Tetrimino.h"
 #include "VirtualBag/VirtualBag.h"
 
+/////////////////////////////////
+//    3rd-party lib includes   //
+/////////////////////////////////
+#include <SFML/Audio.hpp>
+
 //////////////////////////////////
 // Other project-local includes //
 //////////////////////////////////
 #include "../GameApp/GameApp.h"
+
+///////////////////////////////////////
+// Pre-processor/constexpr constants //
+///////////////////////////////////////
+static const std::string szAssetFolder = "Assets";
+static const std::string szTextureFolder = "Texture";
+static const std::string szSfxFolder = "SFX";
+
+static const std::string szBlockAtlas = "block_atlas.png";
+static const std::string szDigitAtlas = "digit_atlas.png";
+static const std::string szBackground = "bg.png";
+
+static const std::string szSfxMov = "sfx_movement_ladder1a.wav";
+static const std::string szSfxHit = "sfx_sounds_impact4.wav";
+static const std::string szSfxLock = "sfx_sounds_impact1.wav";
+static const std::string szSfxLvUp = "sfx_sounds_powerup1.wav";
+
 
 /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
   Class:    BlockTris
@@ -64,6 +87,13 @@ private:
 	HoldPieceAttempt,
 	Pause,
 	GameOver
+    };
+
+    enum SoundEffects {
+	SFX_MOVE_ROT,
+	SFX_HIT,
+	SFX_LOCK,
+	SFX_LEVEL_UP
     };
 
     virtual bool OnInitialize() override;
@@ -108,9 +138,11 @@ private:
     sf::Texture m_sfBgTexture;
     sf::Texture m_sfDigitsTexture;
     sf::Sprite m_sfBackground;
+    sf::Sound m_sfSoundEffectControl;
     std::array<sf::Sprite, 7> m_asfScoreSprites;
     std::array<sf::Sprite, 3> m_asfLinesSprites;
     std::array<sf::Sprite, 3> m_asfLevelSprites;
+    std::array<sf::SoundBuffer, 4> m_asfSoundEffect;
 
     // Tetrimino related objects
     VirtualBag* m_pvbWaitingBlocks;

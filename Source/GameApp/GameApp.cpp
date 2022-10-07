@@ -63,6 +63,27 @@ void GameApp::RefreshAndDisplay() {
     m_pWindow->display();
 }
 
+void GameApp::PlaySoundEffects() {
+    for (auto itSfxMap = m_hmSoundEffects.begin(); itSfxMap != m_hmSoundEffects.end(); itSfxMap++) {
+	auto& prEntry = itSfxMap->second;
+	if (prEntry.second) {
+	    prEntry.first->play();
+	    prEntry.second = false;
+	}
+    }
+}
+
+void GameApp::MarkSoundForPlay(int nSfxNo) {
+    m_hmSoundEffects[nSfxNo].second = true;
+}
+
+void GameApp::RegisterSoundEffect(int nSfxNo, sf::SoundBuffer* psfSoundBuffer) {
+    m_hmSoundEffects[nSfxNo] = std::make_pair<std::shared_ptr<sf::Sound>, bool>(
+	    std::make_shared<sf::Sound>(*psfSoundBuffer),
+	    false
+	);
+}
+
 GameApp::GameApp(std::string szWindowTitle,
     FPSControl ctrlFpsControl)
     : m_szWindowTitle(szWindowTitle), m_ctrlMode(ctrlFpsControl) {
@@ -126,6 +147,8 @@ int GameApp::RunGame() {
 	// Time to let the derived class handle its logic
 	if (!OnUpdate(fFrameTime)) 
 	    return -1;
+
+	PlaySoundEffects();
 
 	// If we had any 'released' keys clear them here, OnUpdate has already been
 	// made aware of any released keys this frame

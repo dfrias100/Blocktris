@@ -26,9 +26,23 @@ bool BlockTris::OnInitialize() {
     m_sfHeldOutline = sf::RectangleShape(sf::Vector2f(PreviewRectSizeX,
 	PreviewRectSizeX));
 
-    m_sfBgTexture.loadFromFile("bg.png");
-    m_sfDigitsTexture.loadFromFile("digit_atlas.png");
-    PileBlock::sm_sfBlockTexture.loadFromFile("block.png");
+    auto szDir = szAssetFolder + "/" + szTextureFolder + "/";
+
+    m_sfBgTexture.loadFromFile(szDir + szBackground);
+    m_sfDigitsTexture.loadFromFile(szDir + szDigitAtlas);
+    PileBlock::sm_sfBlockTexture.loadFromFile(szDir + szBlockAtlas);
+
+    szDir = szAssetFolder + "/" + szSfxFolder + "/";
+
+    m_asfSoundEffect[SFX_MOVE_ROT].loadFromFile(szDir + szSfxMov);
+    m_asfSoundEffect[SFX_HIT].loadFromFile(szDir + szSfxHit);
+    m_asfSoundEffect[SFX_LOCK].loadFromFile(szDir + szSfxLock);
+    m_asfSoundEffect[SFX_LEVEL_UP].loadFromFile(szDir + szSfxLvUp);
+
+    RegisterSoundEffect(SFX_MOVE_ROT, &m_asfSoundEffect[SFX_MOVE_ROT]);
+    RegisterSoundEffect(SFX_HIT, &m_asfSoundEffect[SFX_HIT]);
+    RegisterSoundEffect(SFX_LOCK, &m_asfSoundEffect[SFX_LOCK]);
+    RegisterSoundEffect(SFX_LEVEL_UP, &m_asfSoundEffect[SFX_LEVEL_UP]);
 
     m_sfBackground.setTexture(m_sfBgTexture, true);
 
@@ -221,6 +235,8 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	// Check this next frame
 	m_aPrevFrameKeyStates = m_aCurrFrameKeyStates;
 
+	bool bMovedOrRotated = false;
+
 	// Process input if the timer is tripped
 	if (
 	    (m_gsState == GameStates::BlockFalling ||
@@ -238,6 +254,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 		m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
 		CalculateHardDropPreview();
 		m_ullLockDelayTimer = m_gsState == GameStates::BlockLockDelay ? 30 : m_ullLockDelayTimer;
+		bMovedOrRotated = true;
 	    }
 
 	    if (m_bKeyPressedInitialLeft || m_bKeyPressedInitialRight) {
@@ -258,11 +275,16 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 		m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
 		CalculateHardDropPreview();
 		m_ullLockDelayTimer = m_gsState == GameStates::BlockLockDelay ? 30 : m_ullLockDelayTimer;
+		bMovedOrRotated = true;
 	    }
 	    
 	    m_bRotationKeyHeld = true;
 	} else if (!bRotationKeyPressed) {
 	    m_bRotationKeyHeld = false;
+	}
+
+	if (bMovedOrRotated) {
+	    MarkSoundForPlay(SFX_MOVE_ROT);
 	}
     }
 
@@ -316,6 +338,9 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 		    if (yTest >= 20 || (yTest >= 0 && !m_aLogicalBoard[yTest][xTest].m_bHidden)) {
 			m_gsState = GameStates::BlockLockDelay;
 			bVerticalCollision = true;
+
+			MarkSoundForPlay(SFX_HIT);
+
 			break;
 		    }
 		}
@@ -377,6 +402,9 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    m_gsState = GameStates::BlockGeneration;
 	    m_ullBlockCollisionTimer = 15;
 	} else {
+	    if (m_ullBlockCollisionTimer == 15)
+		MarkSoundForPlay(SFX_LOCK);
+
 	    m_ullBlockCollisionTimer--;
 	}
 
@@ -702,6 +730,7 @@ void BlockTris::UpdateText() {
 void BlockTris::RecalculateLevel() {
     if (m_unLinesCleared / (m_unLevel * 10) > 0) {
 	m_unLevel++;
+	MarkSoundForPlay(SFX_LEVEL_UP);
 	m_unStateInterval = LevelCurveFunction(m_unLevel, m_unLinesPerInterval);
     }
 }

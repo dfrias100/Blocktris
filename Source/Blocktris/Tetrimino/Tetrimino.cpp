@@ -319,6 +319,7 @@ void Tetrimino::MoveDown() {
 void Tetrimino::ResetPieceAndPivot() {
     m_sfPiecePivot = m_aPiecePivots[static_cast<int>(m_CurrentPieceType)];
     m_vCurrentPiece = m_aPieces[static_cast<int>(m_CurrentPieceType)];
+    m_nCurrentOrientation = 0;
 
     for (int i = 0; i < 4; i++) {
 	m_asfPieceViz[i].setPosition(

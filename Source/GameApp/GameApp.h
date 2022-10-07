@@ -25,11 +25,13 @@
 #include <string>
 #include <unordered_map>
 #include <list>
+#include <memory>
 
 /////////////////////////////////
 //    3rd-party lib includes   //
 /////////////////////////////////
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 
 /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
   Class:    GameApp
@@ -66,6 +68,7 @@ private:
     // Meta-data data structures
     std::string m_szWindowTitle;
     std::unordered_map<sf::Keyboard::Key, KeyStatus> m_hmKeys;
+    std::unordered_map<int, std::pair<std::shared_ptr<sf::Sound>, bool>> m_hmSoundEffects;
     std::list<sf::Drawable*> m_llstDrawableObjects;
 
     FPSControl m_ctrlMode;
@@ -74,6 +77,7 @@ private:
     void ResetReleasedKeys();
     void HandleInput();
     void RefreshAndDisplay();
+    void PlaySoundEffects();
 
     void LockFrameRate();
 
@@ -96,7 +100,11 @@ protected:
 
     // This function is what the derived class will use when
     // it wants the engine to draw something
-    void PushDrawableObject(sf::Drawable* sfDrawableObj);
+    void PushDrawableObject(sf::Drawable* psfDrawableObj);
+    
+    void MarkSoundForPlay(int nSfxNo);
+    
+    void RegisterSoundEffect(int nSfxNo, sf::SoundBuffer* psfSoundBuffer);
 
 public:
     // Constructors, default title and FPS control is specified.
