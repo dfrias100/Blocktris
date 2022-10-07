@@ -46,6 +46,8 @@ bool BlockTris::OnInitialize() {
 
     m_sfBackground.setTexture(m_sfBgTexture, true);
 
+    m_unLevel = 20;
+
     SetupDigits<std::array<sf::Sprite, 7>::iterator>(
 	    m_asfScoreSprites.begin(),
 	    m_asfScoreSprites.end(),
@@ -308,8 +310,6 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 
 	m_unCellsFastDropped = 0;
 	m_unCellsHardDropped = 0;
-	m_unMoveInterval = 20;
-	m_ullTetriminoMoveTimer = 19;
 
 	m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
 	m_aPreviewTetriminos = m_pvbWaitingBlocks->PeekNextPieces();
