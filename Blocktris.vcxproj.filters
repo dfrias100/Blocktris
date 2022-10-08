@@ -30,7 +30,10 @@
     <ClCompile Include="Source\Blocktris\VirtualBag\VirtualBag.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Blocktris\PileBlock.cpp">
+    <ClCompile Include="Source\Blocktris\PileBlock\PileBlock.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Blocktris\TetriminoAnimation\TetriminoAnimation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -41,9 +44,6 @@
     <ClInclude Include="Source\Blocktris\Blocktris.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Blocktris\PileBlock.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Blocktris\Tetrimino\Tetrimino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -51,6 +51,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Blocktris\VirtualBag\VirtualBag.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Blocktris\PileBlock\PileBlock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Blocktris\TetriminoAnimation\TetriminoAnimation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

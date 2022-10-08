@@ -38,15 +38,17 @@ bool BlockTris::OnInitialize() {
     m_asfSoundEffect[SFX_HIT].loadFromFile(szDir + szSfxHit);
     m_asfSoundEffect[SFX_LOCK].loadFromFile(szDir + szSfxLock);
     m_asfSoundEffect[SFX_LEVEL_UP].loadFromFile(szDir + szSfxLvUp);
+    m_asfSoundEffect[SFX_PAUSE_IN].loadFromFile(szDir + szSfxPauseIn);
+    m_asfSoundEffect[SFX_PAUSE_OUT].loadFromFile(szDir + szSfxPauseOut);
 
     RegisterSoundEffect(SFX_MOVE_ROT, &m_asfSoundEffect[SFX_MOVE_ROT]);
     RegisterSoundEffect(SFX_HIT, &m_asfSoundEffect[SFX_HIT]);
     RegisterSoundEffect(SFX_LOCK, &m_asfSoundEffect[SFX_LOCK]);
     RegisterSoundEffect(SFX_LEVEL_UP, &m_asfSoundEffect[SFX_LEVEL_UP]);
+    RegisterSoundEffect(SFX_PAUSE_IN, &m_asfSoundEffect[SFX_PAUSE_IN]);
+    RegisterSoundEffect(SFX_PAUSE_OUT, &m_asfSoundEffect[SFX_PAUSE_OUT]);
 
     m_sfBackground.setTexture(m_sfBgTexture, true);
-
-    m_unLevel = 20;
 
     SetupDigits<std::array<sf::Sprite, 7>::iterator>(
 	    m_asfScoreSprites.begin(),
@@ -111,12 +113,6 @@ bool BlockTris::OnInitialize() {
 }
 
 bool BlockTris::OnUpdate(float fFrameTime) {
-    /*-----------------------------------------------------------|
-    |  The game will be locked at 60 fps, processing the states  |
-    |  every 60 ticks (~1s). Every update call advances the tick |
-    |  counter by 1.                                             |
-    |-----------------------------------------------------------*/
-
     if (m_gsState != GameStates::BlockGeneration)
 	CalculateHardDropPreview();
 
@@ -135,12 +131,20 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    m_gsState = GameStates::Pause;
 
 	    m_ullGameTicks = 0;
+
+	    MarkSoundForPlay(SFX_PAUSE_IN);
 	
 	    bJustEnteredPause = true;
 	    bStateKeyPressed = true;
 	}
 
-	if (bHeldKeyPressed && !m_bAlreadyPressedHeld && !bStateKeyPressed) {
+	if (
+	    bHeldKeyPressed && 
+	    !m_bAlreadyPressedHeld && 
+	    !bStateKeyPressed && 
+		(m_gsState == GameStates::BlockFalling ||
+		m_gsState == GameStates::BlockLockDelay)
+	) {
 	    m_bAlreadyPressedHeld = true;
 	    m_bSkipInput = true;
 
@@ -164,11 +168,8 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 
 	    std::swap(m_pActiveTetrimino, m_pHardDropPreview);
 
-	    for (auto& sfShape : m_pActiveTetrimino->GetPieceShapes()) {
-		sf::Color sfShapeColor = sfShape.getFillColor();
-		sfShapeColor.a = 255;
-		sfShape.setFillColor(sfShapeColor);
-	    }
+	    m_pActiveTetrimino->SetAlphaLevel(255);
+	    m_fAlphaT = 0.0f;
 
 	    m_gsState = GameStates::BlockHit;
 
@@ -255,7 +256,6 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    ) {
 		m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
 		CalculateHardDropPreview();
-		m_ullLockDelayTimer = m_gsState == GameStates::BlockLockDelay ? 30 : m_ullLockDelayTimer;
 		bMovedOrRotated = true;
 	    }
 
@@ -271,22 +271,30 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	bool bRotationKeyPressed = bLeftRotation || bRightRotation;
 
 	if (bRotationKeyPressed && !m_bRotationKeyHeld && m_gsState != GameStates::BlockHit) {
+
 	    sf::Vector2f sfRotationCoefficients = bLeftRotation ?
 		sf::Vector2f(-1.0f, 1.0f) : sf::Vector2f(1.0f, -1.0f);
+
 	    if (m_pActiveTetrimino->RotateTetrimino(sfRotationCoefficients, m_aLogicalBoard)) {
 		m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
 		CalculateHardDropPreview();
-		m_ullLockDelayTimer = m_gsState == GameStates::BlockLockDelay ? 30 : m_ullLockDelayTimer;
 		bMovedOrRotated = true;
 	    }
 	    
 	    m_bRotationKeyHeld = true;
+
 	} else if (!bRotationKeyPressed) {
 	    m_bRotationKeyHeld = false;
 	}
 
 	if (bMovedOrRotated) {
 	    MarkSoundForPlay(SFX_MOVE_ROT);
+
+	    if (m_gsState == GameStates::BlockLockDelay) {
+		m_pActiveTetrimino->SetAlphaLevel(255);
+		m_fAlphaT = 0.0f;
+		m_ullLockDelayTimer = 30;
+	    }
 	}
     }
 
@@ -304,12 +312,12 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     {
     case GameStates::BlockGeneration:
     {
-	// Reset the position of our tetrimino now that we've thrown it into the pile
 	if (m_pActiveTetrimino)
 	    m_bAlreadyPressedHeld = false;
 
 	m_unCellsFastDropped = 0;
 	m_unCellsHardDropped = 0;
+	m_fAlphaT = 0.0f;
 
 	m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
 	m_aPreviewTetriminos = m_pvbWaitingBlocks->PeekNextPieces();
@@ -338,9 +346,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 		    if (yTest >= 20 || (yTest >= 0 && !m_aLogicalBoard[yTest][xTest].m_bHidden)) {
 			m_gsState = GameStates::BlockLockDelay;
 			bVerticalCollision = true;
-
 			MarkSoundForPlay(SFX_HIT);
-
 			break;
 		    }
 		}
@@ -364,6 +370,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    |   In this case, we make the blocks where the tetrimino rests   |
 	    |   visible in the logical board.                                |
 	    |---------------------------------------------------------------*/
+
 	    bool bBlockLandedOutside = false;
 
 	    sf::Color sfTetriminoColor = m_pActiveTetrimino->GetColor();
@@ -402,8 +409,10 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    m_gsState = GameStates::BlockGeneration;
 	    m_ullBlockCollisionTimer = 15;
 	} else {
-	    if (m_ullBlockCollisionTimer == 15)
+	    if (m_ullBlockCollisionTimer == 15) {
+		m_pActiveTetrimino->m_ptaAnim->ArmAnimation();
 		MarkSoundForPlay(SFX_LOCK);
+	    }
 
 	    m_ullBlockCollisionTimer--;
 	}
@@ -415,6 +424,9 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     {
 	m_ullLockDelayTimer = 30;
 	std::swap(m_pHeldTetrimino, m_pActiveTetrimino);
+
+	m_pHeldTetrimino->SetAlphaLevel(255);
+	m_fAlphaT = 0.0f;
 
 	if (!m_pActiveTetrimino) {
 	    m_gsState = GameStates::BlockGeneration;
@@ -436,9 +448,23 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	auto& sfActiveCoords = m_pActiveTetrimino->GetLogicalCoords();
 	auto& sfHardDropCoords = m_pHardDropPreview->GetLogicalCoords();
 
+	int nAlphaLevel = std::max(
+	    std::min(
+		std::round(255.0f * (0.35f * cos(2.0f * M_PI * m_fAlphaT) + 0.65f)), 
+		255.0
+	    ),
+	    0.0
+	);
+
+	m_fAlphaT += fFrameTime;
+
+	m_pActiveTetrimino->SetAlphaLevel(nAlphaLevel);
+
 	for (int i = 0; i < 4; i++) {
 	    if (sfActiveCoords[i] != sfHardDropCoords[i]) {
 		m_gsState = GameStates::BlockFalling;
+		m_pActiveTetrimino->SetAlphaLevel(255);
+		m_fAlphaT = 0.0f;
 		m_ullLockDelayTimer = 30;
 		break;
 	    }
@@ -446,6 +472,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 
 	if (m_ullLockDelayTimer == 0) {
 	    m_ullLockDelayTimer = 30;
+	    m_pActiveTetrimino->SetAlphaLevel(255);
 	    m_gsState = GameStates::BlockHit;
 	} else {
 	    m_ullLockDelayTimer--;
@@ -457,6 +484,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	if (bPauseKeyReleased && !bJustEnteredPause) {
 	    m_bSkipInput = false;
 	    m_gsState = m_gsSavedState;
+	    MarkSoundForPlay(SFX_PAUSE_OUT);
 	}
 
 	bJustEnteredPause = false;
@@ -466,7 +494,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     {
 	// Stick around here forever (for now)
     }
-    break;
+	break;
     default:
 	// Something has gone very wrong if we end up here
 	break;
@@ -482,6 +510,9 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     PushDrawableObject(&m_sfPreviewOutline);
     PushDrawableObject(&m_sfHeldOutline);
     DrawPreviewAndHeld();
+
+    if (m_gsState == GameStates::BlockHit)
+	m_pActiveTetrimino->DoAnimation();
 
     if (m_gsState != GameStates::BlockGeneration && m_gsState != GameStates::GameOver) {
 	if (m_gsState != GameStates::Pause)
@@ -534,12 +565,8 @@ void BlockTris::CalculateHardDropPreview() {
 	    m_pHardDropPreview->MoveDown();
 	}
     }
-    
-    for (auto& sfShape : m_pHardDropPreview->GetPieceShapes()) {
-	sf::Color sfShapeColor = sfShape.getFillColor();
-	sfShapeColor.a = 127;
-	sfShape.setFillColor(sfShapeColor);
-    }
+
+    m_pHardDropPreview->SetAlphaLevel(127);
 }
 
 void BlockTris::SetupOutline(sf::RectangleShape& sfRect, float fxOffset, float fyOffset) {

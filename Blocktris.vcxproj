@@ -132,7 +132,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Blocktris\Blocktris.cpp" />
-    <ClCompile Include="Source\Blocktris\PileBlock.cpp" />
+    <ClCompile Include="Source\Blocktris\PileBlock\PileBlock.cpp" />
+    <ClCompile Include="Source\Blocktris\TetriminoAnimation\TetriminoAnimation.cpp" />
     <ClCompile Include="Source\Blocktris\Tetrimino\Tetrimino.cpp" />
     <ClCompile Include="Source\Blocktris\VirtualBag\VirtualBag.cpp" />
     <ClCompile Include="Source\GameApp\GameApp.cpp" />
@@ -141,7 +142,8 @@
   <ItemGroup>
     <ClInclude Include="Source\Blocktris\Blocktris.h" />
     <ClInclude Include="Source\Blocktris\PieceConstants.h" />
-    <ClInclude Include="Source\Blocktris\PileBlock.h" />
+    <ClInclude Include="Source\Blocktris\PileBlock\PileBlock.h" />
+    <ClInclude Include="Source\Blocktris\TetriminoAnimation\TetriminoAnimation.h" />
     <ClInclude Include="Source\Blocktris\Tetrimino\Tetrimino.h" />
     <ClInclude Include="Source\Blocktris\VirtualBag\VirtualBag.h" />
     <ClInclude Include="Source\GameApp\GameApp.h" />

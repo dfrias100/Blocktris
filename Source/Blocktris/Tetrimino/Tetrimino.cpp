@@ -137,6 +137,9 @@ const sf::Vector2i Tetrimino::ReturnWallKickVectorIPiece(int nPrevOrientation, i
 }
 
 Tetrimino::Tetrimino(PieceTypes ptType) {
+    std::vector<unsigned int> vAnim = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    sf::IntRect sfBaseSprite = sf::IntRect(static_cast<int>(ptType) * SquareSize, 0, SquareSize, SquareSize);
+    m_ptaAnim = new TetriminoAnimation(vAnim, sfBaseSprite);
     m_sfPiecePivot = m_aPiecePivots[static_cast<int>(ptType)];
     m_vCurrentPiece = m_aPieces[static_cast<int>(ptType)];
     m_CurrentPieceType = ptType;
@@ -293,6 +296,14 @@ std::array<sf::RectangleShape, 4>& Tetrimino::GetPieceShapes() {
     return m_asfPieceViz;
 }
 
+void Tetrimino::SetAlphaLevel(int nAlphaLevel) {
+    for (auto& sfShape : m_asfPieceViz) {
+	auto sfColor = sfShape.getFillColor();
+	sfColor.a = nAlphaLevel;
+	sfShape.setFillColor(sfColor);
+    }
+}
+
 sf::Vector2f Tetrimino::GetPivot() {
     return m_sfPiecePivot;
 }
@@ -303,6 +314,16 @@ sf::Color Tetrimino::GetColor() {
 
 PieceTypes Tetrimino::GetPieceType() {
     return m_CurrentPieceType;
+}
+
+void Tetrimino::DoAnimation() {
+    if (m_ptaAnim->IsPlaying()) {
+	auto sfAnimFrameRect = m_ptaAnim->StepAnimation();
+
+	for (auto& sfShape : m_asfPieceViz) {
+	    sfShape.setTextureRect(sfAnimFrameRect);
+	}
+    }
 }
 
 void Tetrimino::MoveDown() {
@@ -326,6 +347,22 @@ void Tetrimino::ResetPieceAndPivot() {
 	    LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
 	);
     }
+}
+
+Tetrimino::~Tetrimino() {
+    delete m_ptaAnim;
+}
+
+Tetrimino::Tetrimino(const Tetrimino& ttMino) {
+    this->m_asfPieceViz = ttMino.m_asfPieceViz;
+    this->m_vCurrentPiece = ttMino.m_vCurrentPiece;
+    this->m_sfPiecePivot = ttMino.m_sfPiecePivot;
+    this->m_CurrentPieceType = ttMino.m_CurrentPieceType;
+    this->m_nCurrentOrientation = ttMino.m_nCurrentOrientation;
+
+    std::vector<unsigned int> vAnim = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    sf::IntRect sfBaseSprite = sf::IntRect(static_cast<int>(this->m_CurrentPieceType) * SquareSize, 0, SquareSize, SquareSize);
+    this->m_ptaAnim = new TetriminoAnimation(vAnim, sfBaseSprite);
 }
 
 void Tetrimino::SetPivot(sf::Vector2f sfPivotCoords) {

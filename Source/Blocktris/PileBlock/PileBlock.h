@@ -32,7 +32,7 @@
 /////////////////////////////////
 //    Local folder includes    //
 /////////////////////////////////
-#include "PieceConstants.h"
+#include "../PieceConstants.h"
 
 struct PileBlock {
     bool m_bHidden = true;

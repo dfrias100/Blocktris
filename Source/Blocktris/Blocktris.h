@@ -29,6 +29,10 @@ class VirtualBag;
 /////////////////////////////////
 // STL and C/C++ lib includes  //
 /////////////////////////////////
+#if defined(_WIN32)
+    #define _USE_MATH_DEFINES
+#endif
+
 #include <array>
 #include <utility>
 #include <memory>
@@ -38,7 +42,7 @@ class VirtualBag;
 /////////////////////////////////
 //    Local folder includes    //
 /////////////////////////////////
-#include "PileBlock.h"
+#include "PileBlock/PileBlock.h"
 #include "PieceConstants.h"
 #include "Tetrimino/Tetrimino.h"
 #include "VirtualBag/VirtualBag.h"
@@ -68,6 +72,8 @@ static const std::string szSfxMov = "sfx_movement_ladder1a.wav";
 static const std::string szSfxHit = "sfx_sounds_impact4.wav";
 static const std::string szSfxLock = "sfx_sounds_impact1.wav";
 static const std::string szSfxLvUp = "sfx_sounds_powerup1.wav";
+static const std::string szSfxPauseIn = "sfx_sounds_pause3_in.wav";
+static const std::string szSfxPauseOut = "sfx_sounds_pause3_out.wav";
 
 
 /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
@@ -93,7 +99,9 @@ private:
 	SFX_MOVE_ROT,
 	SFX_HIT,
 	SFX_LOCK,
-	SFX_LEVEL_UP
+	SFX_LEVEL_UP,
+	SFX_PAUSE_IN,
+	SFX_PAUSE_OUT
     };
 
     virtual bool OnInitialize() override;
@@ -142,7 +150,7 @@ private:
     std::array<sf::Sprite, 7> m_asfScoreSprites;
     std::array<sf::Sprite, 3> m_asfLinesSprites;
     std::array<sf::Sprite, 3> m_asfLevelSprites;
-    std::array<sf::SoundBuffer, 4> m_asfSoundEffect;
+    std::array<sf::SoundBuffer, 6> m_asfSoundEffect;
 
     // Tetrimino related objects
     VirtualBag* m_pvbWaitingBlocks;
@@ -175,6 +183,7 @@ private:
     unsigned long long m_ullLockDelayTimer = 30;
     unsigned long long m_ullBlockCollisionTimer = 15;
     unsigned long long m_ullGameTicks = 1;
+    float m_fAlphaT = 0.0f;
 
     // Player statistics
     unsigned long long m_ullPoints = 0;

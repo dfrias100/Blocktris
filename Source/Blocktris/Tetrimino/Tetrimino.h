@@ -5,8 +5,9 @@
 #include <vector>
 
 #include "../PieceConstants.h"
-#include "../PileBlock.h"
+#include "../PileBlock/PileBlock.h"
 #include "../Blocktris.h"
+#include "../TetriminoAnimation/TetriminoAnimation.h"
 
 #include <SFML/Graphics.hpp>
 
@@ -15,6 +16,7 @@ private:
     // Y X: 0 1 2 3 *4* 5 6 7 8 9
     // 0
     // 1
+    // TODO: Make these static
     const std::vector<sf::Vector2i> m_vI_Piece = { {3, -2}, {4, -2}, {5, -2}, {6, -2} };
     const std::vector<sf::Vector2i> m_vJ_Piece = { {3, -2}, {3, -1}, {4, -1}, {5, -1} };
     const std::vector<sf::Vector2i> m_vL_Piece = { {5, -2}, {3, -1}, {4, -1}, {5, -1} };
@@ -71,11 +73,15 @@ private:
 
 public:
     Tetrimino(PieceTypes ptType);
+    Tetrimino(const Tetrimino& ttMino);
+    ~Tetrimino();
     
     void MoveDown();
     void ResetPieceAndPivot();
     void TranslatePivot(sf::Vector2f sfTranslation);
     void SetPivot(sf::Vector2f sfPivotCoords);
+    void SetAlphaLevel(int nAlphaLevel);
+    void DoAnimation();
     bool TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brdGameField);
     bool RotateTetrimino(sf::Vector2f sfRotationCoefficents, Board& brdGameField);
     const std::vector<sf::Vector2i>& GetLogicalCoords();
@@ -83,6 +89,8 @@ public:
     sf::Vector2f GetPivot();
     sf::Color GetColor();
     PieceTypes GetPieceType();
+
+    TetriminoAnimation* m_ptaAnim;
 };
 
 #endif
