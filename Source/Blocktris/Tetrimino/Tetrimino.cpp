@@ -41,8 +41,6 @@ const std::array<std::array<sf::Vector2i, 4>, 4> Tetrimino::m_aWallKickData = {
 |   0>>3 (-1, 0) ( 2, 0) (-1,  2) ( 2, -1)  |
 |------------------------------------------*/
 
-sf::Texture Tetrimino::sm_sfBlockTexture;
-
 const std::array<std::array<sf::Vector2i, 4>, 4> Tetrimino::m_aWallKickDataIPiece = {
     {
 	{ sf::Vector2i(-2, 0), sf::Vector2i( 1, 0), sf::Vector2i(-2,  1), sf::Vector2i( 1, -2) }, // 0 >> 1
@@ -51,6 +49,18 @@ const std::array<std::array<sf::Vector2i, 4>, 4> Tetrimino::m_aWallKickDataIPiec
 	{ sf::Vector2i( 1, 0), sf::Vector2i(-2, 0), sf::Vector2i( 1,  2), sf::Vector2i(-2, -1) }  // 2 >> 1
     }
 };
+
+// First 2 vec2is: Corners in front, Last 2 vec2is: Corners in back
+const std::array<std::array<sf::Vector2i, 4>, 4> Tetrimino::m_aT_SpinCorners = {
+    {
+	{ sf::Vector2i(-1, -1), sf::Vector2i( 1, -1), sf::Vector2i(-1,  1), sf::Vector2i( 1,  1) }, // Orientation 0
+	{ sf::Vector2i( 1, -1), sf::Vector2i( 1,  1), sf::Vector2i(-1, -1), sf::Vector2i(-1,  1) }, // Orientation 1
+	{ sf::Vector2i(-1,  1), sf::Vector2i( 1,  1), sf::Vector2i(-1, -1), sf::Vector2i( 1, -1) }, // Orientation 2
+	{ sf::Vector2i(-1, -1), sf::Vector2i(-1,  1), sf::Vector2i( 1, -1), sf::Vector2i( 1,  1) }  // Orientation 3
+    }
+};
+
+sf::Texture Tetrimino::sm_sfBlockTexture;
 
 const sf::Vector2i Tetrimino::ReturnWallKickVector(int nPrevOrientation, int nNewOrientation, int nTestNo) {
     switch (nNewOrientation) {
@@ -237,14 +247,17 @@ bool Tetrimino::RotateTetrimino(sf::Vector2f sfRotationCoefficents,
 	if (bCanRotate) {
 	    m_nPrevOrientation = m_nCurrentOrientation;
 	    m_nCurrentOrientation = nPossibleRotation;
+	    m_nLastRotationTest = i;
 
 	    TranslatePivot(sf::Vector2f(sfTranslationVector));
 	    m_vCurrentPiece = vTetriminoCoords;
-	    for (int i = 0; i < 4; i++) {
-		m_asfPieceViz[i].setPosition(
-		    LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
+
+	    for (int j = 0; j < 4; j++) {
+		m_asfPieceViz[j].setPosition(
+		    LogicalCoordsToScreenCoords(m_vCurrentPiece[j])
 		);
 	    }
+
 	    return true;
 	} else {
 	    for (auto& sfLogicalCoord : vTetriminoCoords) {
@@ -314,6 +327,44 @@ sf::Color Tetrimino::GetColor() {
 
 PieceTypes Tetrimino::GetPieceType() {
     return m_CurrentPieceType;
+}
+
+T_SpinTypes Tetrimino::CheckTSpin(Board& brdGameField) {
+    if (m_CurrentPieceType != PieceTypes::T_Piece)
+	return T_SpinTypes::NoSpin;
+
+    auto& aTestCorners = m_aT_SpinCorners[m_nCurrentOrientation];
+    sf::Vector2i sfPivot = sf::Vector2i(m_sfPiecePivot);
+
+    int nBackCorners = 0;
+    int nFrontCorners = 0;
+    
+    for (int i = 0; i < 4; i++) {
+	sfPivot += aTestCorners[i];
+
+	if (
+	    sfPivot.x < 0 ||
+	    sfPivot.y >= 20 ||
+	    sfPivot.y < 0 ||
+	    !brdGameField[sfPivot.y][sfPivot.x].m_bHidden
+	) {
+	    if (i < 2) nFrontCorners++;
+	    else nBackCorners++;
+	}
+
+	sfPivot -= aTestCorners[i];
+    }
+
+    if (nFrontCorners == 2 && nBackCorners == 1) {
+	return T_SpinTypes::FullSpin;
+    } else if (nFrontCorners == 1 && nBackCorners == 2) {
+	if (m_nLastRotationTest == 4)
+	    return T_SpinTypes::FullSpin;
+
+	return T_SpinTypes::MiniSpin;
+    }
+
+    return T_SpinTypes::NoSpin;
 }
 
 void Tetrimino::DoAnimation() {

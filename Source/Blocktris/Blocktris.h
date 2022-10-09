@@ -90,6 +90,7 @@ private:
 	BlockFalling,
 	BlockLockDelay,
 	BlockHit,
+	LineClearing,
 	HoldPieceAttempt,
 	Pause,
 	GameOver
@@ -113,7 +114,8 @@ private:
     void SetupOutline(sf::RectangleShape& sfRect, float fxOffset, float fyOffset);
     void DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz);
     void DrawTetrimino(std::shared_ptr<Tetrimino> pttMino, sf::IntRect sfBoundingRect);
-    void CheckLineClears();
+    bool CheckLineClears();
+    void ClearLines();
     void DrawPreviewAndHeld();
     void DrawTetriminoInBox(
 	std::array<sf::RectangleShape, 4>& aBlocksViz, 
@@ -173,6 +175,10 @@ private:
     bool m_bSkipInput = false;
     bool m_bHeldChanged = false;
     bool m_bRefreshPreview = true;
+    bool m_bCombo = false;
+    bool m_bClearedLinesPreviously = false;
+    bool m_bBackToBack = false;
+    T_SpinTypes m_tsTPieceSpin = T_SpinTypes::NoSpin;
 
     // Timers and speeds
     unsigned int m_unStateInterval = 60;

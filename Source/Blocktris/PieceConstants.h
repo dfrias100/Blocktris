@@ -39,4 +39,9 @@ enum class PieceTypes {
     Z_Piece = 6
 };
 
+enum class T_SpinTypes {
+    NoSpin,
+    MiniSpin,
+    FullSpin
+};
 #endif

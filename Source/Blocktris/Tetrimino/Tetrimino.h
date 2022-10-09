@@ -37,6 +37,7 @@ private:
 
     static const std::array<std::array<sf::Vector2i, 4>, 4> m_aWallKickData;
     static const std::array<std::array<sf::Vector2i, 4>, 4> m_aWallKickDataIPiece;
+    static const std::array<std::array<sf::Vector2i, 4>, 4> m_aT_SpinCorners;
 
     const std::array<sf::Color, 7> m_aPieceColors = {
 	sf::Color(0x59C9E7FF), // cyan
@@ -65,6 +66,7 @@ private:
 
     int m_nCurrentOrientation = 0;
     int m_nPrevOrientation = 0;
+    int m_nLastRotationTest;
 
     const sf::Vector2i ReturnWallKickVector(int nPrevOrientation, int nNewOrientation, int nTestNo);
     const sf::Vector2i ReturnWallKickVectorIPiece(int nPrevOrientation, int nNewOrientation, int nTestNo);
@@ -82,6 +84,7 @@ public:
     void SetPivot(sf::Vector2f sfPivotCoords);
     void SetAlphaLevel(int nAlphaLevel);
     void DoAnimation();
+    T_SpinTypes CheckTSpin(Board& brdGameField);
     bool TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brdGameField);
     bool RotateTetrimino(sf::Vector2f sfRotationCoefficents, Board& brdGameField);
     const std::vector<sf::Vector2i>& GetLogicalCoords();

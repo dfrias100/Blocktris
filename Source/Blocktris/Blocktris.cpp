@@ -279,6 +279,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 		m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
 		CalculateHardDropPreview();
 		bMovedOrRotated = true;
+		m_tsTPieceSpin = m_pActiveTetrimino->CheckTSpin(m_aLogicalBoard);
 	    }
 	    
 	    m_bRotationKeyHeld = true;
@@ -404,9 +405,12 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 		break;
 	    }
 
-	    CheckLineClears();
+	    if (CheckLineClears()) {
+		m_gsState = GameStates::LineClearing;
+	    } else {
+		m_gsState = GameStates::BlockGeneration;
+	    }
 
-	    m_gsState = GameStates::BlockGeneration;
 	    m_ullBlockCollisionTimer = 15;
 	} else {
 	    if (m_ullBlockCollisionTimer == 15) {
@@ -418,6 +422,12 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	}
 
 	m_bSkipInput = false;
+    }
+	break;
+    case GameStates::LineClearing: 
+    {
+	ClearLines();
+	m_gsState = GameStates::BlockGeneration;
     }
 	break;
     case GameStates::HoldPieceAttempt:
@@ -591,7 +601,7 @@ void BlockTris::DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz) {
     }
 }
 
-void BlockTris::CheckLineClears() {
+bool BlockTris::CheckLineClears() {
     bool bLinesCleared = false;
     bool bFourClear = false;
     bool bTripleClear = false;
@@ -609,44 +619,48 @@ void BlockTris::CheckLineClears() {
 	bLinesCleared = bDoubleClear || nSinglesClear;
     }
 
-    if (bLinesCleared) {
-	int nLinesCleared = 0;
-
-	for (int i = 0; i < 20; i++) {
-	    if (m_aRowMetaData[i].second) {
-		nLinesCleared++;
-		for (int j = i; j >= 1; j--) {
-		    std::swap(m_aRowMetaData[j], m_aRowMetaData[j - 1]);
-		    std::swap(m_aLogicalBoard[j], m_aLogicalBoard[j - 1]);
-		}
-	    }
-	}
-
-	for (int i = 0; i < nLinesCleared; i++) {
-	    m_aRowMetaData[i].first = 0;
-	    m_aRowMetaData[i].second = false;
-
-	    for (auto& plBlock : m_aLogicalBoard[i]) {
-		plBlock.m_bHidden = true;
-	    }
-	}
-
-	for (int y = 0; y < 20; y++) {
-	    for (int x = 0; x < 10; x++) {
-		m_aLogicalBoard[y][x].m_sfBlockViz.setPosition(
-		    LogicalCoordsToScreenCoords(x, y)
-		);
-	    }
-	}
-
-	int nPrevLinesCleared = m_unLinesCleared;
-	m_unLinesCleared += nLinesCleared;
-	RecalculateLevel();
-
-    }
-
     m_ullPoints += CalculateScore(bFourClear, bTripleClear, bDoubleClear, nSinglesClear);
     UpdateText();
+
+    m_bCombo = bLinesCleared && m_bClearedLinesPreviously;
+    m_bClearedLinesPreviously = bLinesCleared;
+
+    return bLinesCleared;
+}
+
+void BlockTris::ClearLines() {
+    int nLinesCleared = 0;
+
+    for (int i = 0; i < 20; i++) {
+	if (m_aRowMetaData[i].second) {
+	    nLinesCleared++;
+	    for (int j = i; j >= 1; j--) {
+		std::swap(m_aRowMetaData[j], m_aRowMetaData[j - 1]);
+		std::swap(m_aLogicalBoard[j], m_aLogicalBoard[j - 1]);
+	    }
+	}
+    }
+
+    for (int i = 0; i < nLinesCleared; i++) {
+	m_aRowMetaData[i].first = 0;
+	m_aRowMetaData[i].second = false;
+
+	for (auto& plBlock : m_aLogicalBoard[i]) {
+	    plBlock.m_bHidden = true;
+	}
+    }
+
+    for (int y = 0; y < 20; y++) {
+	for (int x = 0; x < 10; x++) {
+	    m_aLogicalBoard[y][x].m_sfBlockViz.setPosition(
+		LogicalCoordsToScreenCoords(x, y)
+	    );
+	}
+    }
+
+    int nPrevLinesCleared = m_unLinesCleared;
+    m_unLinesCleared += nLinesCleared;
+    RecalculateLevel();
 }
 
 void BlockTris::DrawPreviewAndHeld() {
@@ -764,7 +778,41 @@ void BlockTris::RecalculateLevel() {
 
 unsigned int BlockTris::CalculateScore(bool bFour, bool bTriple, bool bDouble, int nSingles) {
     unsigned int unSoftAndHardDropPts = m_unCellsFastDropped + 2.0 * m_unCellsHardDropped;
-    return (100 * nSingles + 300 * bDouble + 500 * bTriple + 800 * bFour) * m_unLevel + unSoftAndHardDropPts;
+
+    unsigned int unSinglesPts = 100 * nSingles;
+    unsigned int unDoublePts = 300 * bDouble;
+    unsigned int unTriplePts = 500 * bTriple;
+    unsigned int unQuadPts = 800 * bFour;
+
+    unsigned int unT_SpinPts = 0;
+
+    // TODO: This could be easier if we passed the number of lines cleared
+    if (m_tsTPieceSpin == T_SpinTypes::FullSpin) {
+	if (bTriple) {
+	    unT_SpinPts = 1600;
+	} else if (bDouble || nSingles == 2) {
+	    unT_SpinPts = 1200;
+	} else if (nSingles == 1) {
+	    unT_SpinPts = 800;
+	} else {
+	    unT_SpinPts = 400;
+	}
+    } else if (m_tsTPieceSpin == T_SpinTypes::MiniSpin) {
+	if (bDouble || nSingles == 2) {
+	    unT_SpinPts = 400;
+	} else if (nSingles == 1) {
+	    unT_SpinPts = 200;
+	} else {
+	    unT_SpinPts = 100;
+	}
+    }
+
+    unsigned int nTotal = unSinglesPts + unDoublePts + unTriplePts + unQuadPts + unT_SpinPts;
+    nTotal += m_bCombo ? 50 : 0;
+    nTotal *= m_unLevel;
+    nTotal += unSoftAndHardDropPts;
+
+    return nTotal;
 }
 
 bool BlockTris::LineBundle(int nLines) {
