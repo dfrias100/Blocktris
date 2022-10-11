@@ -1,5 +1,23 @@
-#ifndef PIECECONSTANTS_H
-#define PIECECONSTANTS_H
+/*----------------------------------------------------------------------------------|
+|  Blocktris: A block puzzle game written in C++ using SFML.                        |
+|                                                                                   |
+|  Copyright(C) 2022  Daniel Frias						    |
+|                                                                                   |
+|  This program is free software; you can redistribute it and/or		    |
+|  modify it under the terms of the GNU General Public License			    |
+|  as published by the Free Software Foundation; either version 2		    |
+|  of the License, or (at your option) any later version.			    |
+|  This program is distributed in the hope that it will be useful,		    |
+|  but WITHOUT ANY WARRANTY; without even the implied warranty of		    |
+|  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			    |
+|  GNU General Public License for more details.					    |
+|  You should have received a copy of the GNU General Public License		    |
+|  along with this program; if not, write to the Free Software			    |
+|  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.  |
+|-----------------------------------------------------------------------------------*/
+
+#ifndef CONSTANTSENUMS_H
+#define CONSTANTSENUMS_H
 
 ///////////////////////////////////////
 // Pre-processor/constexpr constants //
@@ -53,6 +71,9 @@ static constexpr unsigned long long MAX_LINES = 9999;
 
 static constexpr long long CELLS_VERTICAL = 20;
 static constexpr long long CELLS_HORIZONTAL = 10;
+
+static constexpr int NUM_ROTATE_TESTS = 5;
+static constexpr int NUM_ORIENTATIONS = 4;
 
 static constexpr unsigned long long DAS_INITIAL = 20;
 static constexpr unsigned long long DAS_RATE = 1;

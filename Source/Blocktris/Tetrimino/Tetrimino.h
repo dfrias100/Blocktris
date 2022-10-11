@@ -1,3 +1,21 @@
+/*----------------------------------------------------------------------------------|
+|  Blocktris: A block puzzle game written in C++ using SFML.                        |
+|                                                                                   |
+|  Copyright(C) 2022  Daniel Frias						    |
+|                                                                                   |
+|  This program is free software; you can redistribute it and/or		    |
+|  modify it under the terms of the GNU General Public License			    |
+|  as published by the Free Software Foundation; either version 2		    |
+|  of the License, or (at your option) any later version.			    |
+|  This program is distributed in the hope that it will be useful,		    |
+|  but WITHOUT ANY WARRANTY; without even the implied warranty of		    |
+|  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			    |
+|  GNU General Public License for more details.					    |
+|  You should have received a copy of the GNU General Public License		    |
+|  along with this program; if not, write to the Free Software			    |
+|  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.  |
+|-----------------------------------------------------------------------------------*/
+
 #ifndef TETRIMINO_H
 #define TETRIMINO_H
 
@@ -38,16 +56,6 @@ private:
     static const std::array<std::array<sf::Vector2i, 4>, 4> m_aWallKickData;
     static const std::array<std::array<sf::Vector2i, 4>, 4> m_aWallKickDataIPiece;
     static const std::array<std::array<sf::Vector2i, 4>, 4> m_aT_SpinCorners;
-
-    const std::array<sf::Color, 7> m_aPieceColors = {
-	sf::Color(0x59C9E7FF), // cyan
-	sf::Color(0x1F55EAFF), // light blue
-	sf::Color(0xFF9A3CFF), // orange
-	sf::Color(0xE0C230FF), // gold
-	sf::Color(0x329F4BFF), // green
-	sf::Color(0xB152CBFF), // purple
-	sf::Color(0xF33232FF)  // red
-    };
 
     const std::array<sf::Vector2f, 7> m_aPiecePivots = {
 	sf::Vector2f(4.5f, -1.5f),
@@ -90,7 +98,6 @@ public:
     const std::vector<sf::Vector2i>& GetLogicalCoords();
     std::array<sf::RectangleShape, 4>& GetPieceShapes();
     sf::Vector2f GetPivot();
-    sf::Color GetColor();
     PieceTypes GetPieceType();
 
     TetriminoAnimation* m_ptaAnim;

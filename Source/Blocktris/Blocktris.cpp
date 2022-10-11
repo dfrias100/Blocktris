@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------------|
-|  Blocktris: Tetris-like clone written in C++ using SFML. 			    |
+|  Blocktris: A block puzzle game written in C++ using SFML.                        |
 |                                                                                   |
 |  Copyright(C) 2022  Daniel Frias						    |
 |                                                                                   |
@@ -340,7 +340,6 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 
 	    bool bBlockLandedOutside = false;
 
-	    sf::Color sfTetriminoColor = m_pActiveTetrimino->GetColor();
 	    PieceTypes ptTetrimino = m_pActiveTetrimino->GetPieceType();
 
 	    for (auto& sfPileBlockLoc : m_pActiveTetrimino->GetLogicalCoords()) 
@@ -463,13 +462,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	auto& sfActiveCoords = m_pActiveTetrimino->GetLogicalCoords();
 	auto& sfHardDropCoords = m_pHardDropPreview->GetLogicalCoords();
 
-	int nAlphaLevel = std::max(
-	    std::min(
-		std::round(255.0f * (0.35f * cos(2.0f * M_PI * m_fAlphaT) + 0.65f)), 
-		255.0
-	    ),
-	    0.0
-	);
+	int nAlphaLevel = std::max(std::min(std::round(255.0f * (0.35f * cos(2.0f * M_PI * m_fAlphaT) + 0.65f)), 255.0), 0.0);
 	m_fAlphaT += fFrameTime;
 	m_pActiveTetrimino->SetAlphaLevel(nAlphaLevel);
 
@@ -641,7 +634,7 @@ bool BlockTris::CheckLineClears() {
 
     m_bCombo = bLinesCleared && m_bClearedLinesPreviously;
 
-    m_ullPoints += CalculateScore(bFourClear, bTripleClear, bDoubleClear, nSinglesClear, m_vLineClearRowIndexes.size());
+    m_ullScore += CalculateScore(bFourClear, bTripleClear, bDoubleClear, nSinglesClear, m_vLineClearRowIndexes.size());
     UpdateText();
 
     m_bClearedLinesPreviously = bLinesCleared;
@@ -750,11 +743,11 @@ void BlockTris::DrawTetriminoInBox(
 }
 
 void BlockTris::UpdateText() {
-    if (m_unLinesCleared > 9999)
-	m_unLinesCleared = 9999;
+    if (m_unLinesCleared > MAX_LINES)
+	m_unLinesCleared = MAX_LINES;
 
-    if (m_ullPoints > 9999999)
-	m_ullPoints = 9999999;
+    if (m_ullScore > MAX_SCORE)
+	m_ullScore = MAX_SCORE;
 
     auto itLinesSprBegin = m_asfLinesSprites.begin(), itLinesSprEnd = m_asfLinesSprites.end();
     auto itLevelsSprBegin = m_asfLevelSprites.begin(), itLevelsSprEnd = m_asfLevelSprites.end();
@@ -762,7 +755,7 @@ void BlockTris::UpdateText() {
 
     ReassignDigits(itLinesSprBegin, itLinesSprEnd, m_asfLinesSprites.size(), m_unLinesCleared);
     ReassignDigits(itLevelsSprBegin, itLevelsSprEnd, m_asfLevelSprites.size(), m_unLevel);
-    ReassignDigits(itScoreSprBegin, itScoreSprEnd, m_asfScoreSprites.size(), m_ullPoints);
+    ReassignDigits(itScoreSprBegin, itScoreSprEnd, m_asfScoreSprites.size(), m_ullScore);
 }
 
 void BlockTris::RecalculateLevel() {

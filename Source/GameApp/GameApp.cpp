@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------------|
-|  Blocktris: Tetris-like clone written in C++ using SFML. 			    |
+|  Blocktris: A block puzzle game written in C++ using SFML.                        |
 |                                                                                   |
 |  Copyright(C) 2022  Daniel Frias						    |
 |                                                                                   |

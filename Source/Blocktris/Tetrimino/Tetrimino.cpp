@@ -1,3 +1,21 @@
+/*----------------------------------------------------------------------------------|
+|  Blocktris: A block puzzle game written in C++ using SFML.                        |
+|                                                                                   |
+|  Copyright(C) 2022  Daniel Frias						    |
+|                                                                                   |
+|  This program is free software; you can redistribute it and/or		    |
+|  modify it under the terms of the GNU General Public License			    |
+|  as published by the Free Software Foundation; either version 2		    |
+|  of the License, or (at your option) any later version.			    |
+|  This program is distributed in the hope that it will be useful,		    |
+|  but WITHOUT ANY WARRANTY; without even the implied warranty of		    |
+|  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the			    |
+|  GNU General Public License for more details.					    |
+|  You should have received a copy of the GNU General Public License		    |
+|  along with this program; if not, write to the Free Software			    |
+|  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.  |
+|-----------------------------------------------------------------------------------*/
+
 #include "Tetrimino.h"
 
 // NORMAL PIECE WALL KICKS
@@ -216,10 +234,10 @@ bool Tetrimino::RotateTetrimino(sf::Vector2f sfRotationCoefficents,
 
     bool bCanRotate;
     int nRotationIncrement = sfRotationCoefficents.y == -1 ? 1 : -1;
-    int nPossibleRotation = (4 + ((m_nCurrentOrientation + nRotationIncrement) % 4)) % 4;
+    int nPossibleRotation = (NUM_ORIENTATIONS + ((m_nCurrentOrientation + nRotationIncrement) % NUM_ORIENTATIONS)) % NUM_ORIENTATIONS;
     sf::Vector2i sfTranslationVector = sf::Vector2i(0, 0);
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < NUM_ROTATE_TESTS; i++) {
 	if (i != 0) 
 	{
 	    if (m_CurrentPieceType != PieceTypes::I_Piece)
@@ -327,10 +345,6 @@ void Tetrimino::SetAlphaLevel(int nAlphaLevel) {
 
 sf::Vector2f Tetrimino::GetPivot() {
     return m_sfPiecePivot;
-}
-
-sf::Color Tetrimino::GetColor() {
-    return m_aPieceColors[static_cast<int>(m_CurrentPieceType)];
 }
 
 PieceTypes Tetrimino::GetPieceType() {
