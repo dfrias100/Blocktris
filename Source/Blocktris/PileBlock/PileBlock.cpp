@@ -21,3 +21,10 @@ sf::Vector2f LogicalCoordsToScreenCoords(float xLogicalCoord, float yLogicalCoor
 sf::Vector2f LogicalCoordsToScreenCoords(sf::Vector2i& sfLogicalCoords) {
     return LogicalCoordsToScreenCoords(sfLogicalCoords.x, sfLogicalCoords.y);
 }
+
+PileBlock::PileBlock() {
+    std::vector<unsigned int> vAnim = { 0, 5, 0, 5, 0, 5, 0, 5, 0 };
+    sf::IntRect sfBaseSprite = sf::IntRect(0, 0, SquareSize, SquareSize);
+    m_ptaAnim = new TetriminoAnimation(vAnim, sfBaseSprite);
+    m_ptaAnim->SetFrameDelay(9);
+}

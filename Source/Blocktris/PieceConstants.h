@@ -25,9 +25,16 @@ static constexpr float FirstDigitLineY = (392.0f / 800.0f) * ScreenHeight;
 
 static constexpr float DigitLineGap = (111.0f / 800.0f) * ScreenHeight;
 
+static constexpr float FirstMoveLineX = (669.0f / 875.0f) * ScreenWidth;
+static constexpr float FirstMoveLineY = (607.0f / 800.0f) * ScreenHeight;
+
+static constexpr float MoveSpriteVGap = (3.0f / 800.0f) * ScreenHeight;
+
+static constexpr int MoveSpriteWidth = 163;
+static constexpr int MoveSpriteHeight = 28;
+
 static constexpr int FontWidth = 25;
 static constexpr int FontHeight = 31;
-
 
 enum class PieceTypes {
     I_Piece = 0,

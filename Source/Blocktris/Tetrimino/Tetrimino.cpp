@@ -220,7 +220,8 @@ bool Tetrimino::RotateTetrimino(sf::Vector2f sfRotationCoefficents,
     sf::Vector2i sfTranslationVector = sf::Vector2i(0, 0);
 
     for (int i = 0; i < 5; i++) {
-	if (i != 0) {
+	if (i != 0) 
+	{
 	    if (m_CurrentPieceType != PieceTypes::I_Piece)
 		sfTranslationVector = ReturnWallKickVector(m_nCurrentOrientation, nPossibleRotation, i - 1);
 	    else
@@ -252,15 +253,19 @@ bool Tetrimino::RotateTetrimino(sf::Vector2f sfRotationCoefficents,
 	    TranslatePivot(sf::Vector2f(sfTranslationVector));
 	    m_vCurrentPiece = vTetriminoCoords;
 
-	    for (int j = 0; j < 4; j++) {
+	    for (int j = 0; j < 4; j++) 
+	    {
 		m_asfPieceViz[j].setPosition(
 		    LogicalCoordsToScreenCoords(m_vCurrentPiece[j])
 		);
 	    }
 
 	    return true;
-	} else {
-	    for (auto& sfLogicalCoord : vTetriminoCoords) {
+	} 
+	else 
+	{
+	    for (auto& sfLogicalCoord : vTetriminoCoords) 
+	    {
 		sfLogicalCoord -= sfTranslationVector;
 	    }
 	}
@@ -280,18 +285,21 @@ bool Tetrimino::TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brd
 	if (bLeft) sfCoords.x--;
 	if (bRight) sfCoords.x++;
 
-	if (sfCoords.x < 0 || sfCoords.x > 9 || (sfCoords.y >= 0 && !brdGameField[sfCoords.y][sfCoords.x].m_bHidden)) {
+	if (sfCoords.x < 0 || sfCoords.x > 9 || (sfCoords.y >= 0 && !brdGameField[sfCoords.y][sfCoords.x].m_bHidden)) 
+	{
 	    bHorizontalCollision = true;
 	    return false;
 	}
     }
 
-    if (!bHorizontalCollision) {
+    if (!bHorizontalCollision) 
+    {
 	if (bLeft) TranslatePivot({ -1, 0 });
 	if (bRight) TranslatePivot({ 1, 0 });
 
 	m_vCurrentPiece = vTetriminoLogicalCoordsTest;
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < 4; i++) 
+	{
 	    m_asfPieceViz[i].setPosition(
 		LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
 	    );
@@ -343,9 +351,10 @@ T_SpinTypes Tetrimino::CheckTSpin(Board& brdGameField) {
 	sfPivot += aTestCorners[i];
 
 	if (
-	    sfPivot.x < 0 ||
-	    sfPivot.y >= 20 ||
-	    sfPivot.y < 0 ||
+	    sfPivot.x >  9 ||
+	    sfPivot.x <  0 ||
+	    sfPivot.y > 19 ||
+	    sfPivot.y <  0 ||
 	    !brdGameField[sfPivot.y][sfPivot.x].m_bHidden
 	) {
 	    if (i < 2) nFrontCorners++;
@@ -357,7 +366,9 @@ T_SpinTypes Tetrimino::CheckTSpin(Board& brdGameField) {
 
     if (nFrontCorners == 2 && nBackCorners == 1) {
 	return T_SpinTypes::FullSpin;
-    } else if (nFrontCorners == 1 && nBackCorners == 2) {
+    } 
+    else if (nFrontCorners == 1 && nBackCorners == 2) 
+    {
 	if (m_nLastRotationTest == 4)
 	    return T_SpinTypes::FullSpin;
 
@@ -393,7 +404,8 @@ void Tetrimino::ResetPieceAndPivot() {
     m_vCurrentPiece = m_aPieces[static_cast<int>(m_CurrentPieceType)];
     m_nCurrentOrientation = 0;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) 
+    {
 	m_asfPieceViz[i].setPosition(
 	    LogicalCoordsToScreenCoords(m_vCurrentPiece[i])
 	);

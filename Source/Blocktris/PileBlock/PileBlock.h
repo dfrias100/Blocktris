@@ -33,11 +33,14 @@
 //    Local folder includes    //
 /////////////////////////////////
 #include "../PieceConstants.h"
+#include "../TetriminoAnimation/TetriminoAnimation.h"
 
 struct PileBlock {
     bool m_bHidden = true;
     sf::RectangleShape m_sfBlockViz;
     static sf::Texture sm_sfBlockTexture;
+    TetriminoAnimation* m_ptaAnim;
+    PileBlock();
 };
 
 /////////////////////////////////

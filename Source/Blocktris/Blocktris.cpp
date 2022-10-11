@@ -30,57 +30,39 @@ bool BlockTris::OnInitialize() {
 
     m_sfBgTexture.loadFromFile(szDir + szBackground);
     m_sfDigitsTexture.loadFromFile(szDir + szDigitAtlas);
+    m_sfMovesTexture.loadFromFile(szDir + szMoves);
     PileBlock::sm_sfBlockTexture.loadFromFile(szDir + szBlockAtlas);
 
     szDir = szAssetFolder + "/" + szSfxFolder + "/";
 
-    m_asfSoundEffect[SFX_MOVE_ROT].loadFromFile(szDir + szSfxMov);
-    m_asfSoundEffect[SFX_HIT].loadFromFile(szDir + szSfxHit);
-    m_asfSoundEffect[SFX_LOCK].loadFromFile(szDir + szSfxLock);
-    m_asfSoundEffect[SFX_LEVEL_UP].loadFromFile(szDir + szSfxLvUp);
-    m_asfSoundEffect[SFX_PAUSE_IN].loadFromFile(szDir + szSfxPauseIn);
-    m_asfSoundEffect[SFX_PAUSE_OUT].loadFromFile(szDir + szSfxPauseOut);
-
-    RegisterSoundEffect(SFX_MOVE_ROT, &m_asfSoundEffect[SFX_MOVE_ROT]);
-    RegisterSoundEffect(SFX_HIT, &m_asfSoundEffect[SFX_HIT]);
-    RegisterSoundEffect(SFX_LOCK, &m_asfSoundEffect[SFX_LOCK]);
-    RegisterSoundEffect(SFX_LEVEL_UP, &m_asfSoundEffect[SFX_LEVEL_UP]);
-    RegisterSoundEffect(SFX_PAUSE_IN, &m_asfSoundEffect[SFX_PAUSE_IN]);
-    RegisterSoundEffect(SFX_PAUSE_OUT, &m_asfSoundEffect[SFX_PAUSE_OUT]);
+    for (int i = 0; i < m_asfSoundEffect.size(); i++) {
+	m_asfSoundEffect[i].loadFromFile(szDir + aSfxStrings[i]);
+	RegisterSoundEffect(i, &m_asfSoundEffect[i]);
+    }
 
     m_sfBackground.setTexture(m_sfBgTexture, true);
 
-    SetupDigits<std::array<sf::Sprite, 7>::iterator>(
-	    m_asfScoreSprites.begin(),
-	    m_asfScoreSprites.end(),
-	    0.0f
-	);
+    SetupDigits(m_asfScoreSprites.begin(), m_asfScoreSprites.end(), 0.0f);
+    SetupDigits(m_asfLevelSprites.begin(), m_asfLevelSprites.end(), DigitLineGap);
+    SetupDigits(m_asfLinesSprites.begin(), m_asfLinesSprites.end(), 2.0f * DigitLineGap);
+    ReassignDigits(m_asfLevelSprites.begin(), m_asfLevelSprites.end(), m_asfLevelSprites.size(), m_unLevel);
 
-    SetupDigits<std::array<sf::Sprite, 3>::iterator>(
-	    m_asfLevelSprites.begin(),
-	    m_asfLevelSprites.end(),
-	    DigitLineGap
-	);
+    int i = 0;
+    for (auto& prSprite : m_aprMoveSprites) {
+	prSprite.second = false;
+	prSprite.first.setTexture(m_sfMovesTexture);
+	prSprite.first.setPosition(FirstMoveLineX, FirstMoveLineY + i * (MoveSpriteVGap + MoveSpriteHeight));
+	i++;
+    }
 
-    SetupDigits<std::array<sf::Sprite, 3>::iterator>(
-	    m_asfLinesSprites.begin(),
-	    m_asfLinesSprites.end(),
-	    2.0f * DigitLineGap
-	);
-
-    ReassignDigits<std::array<sf::Sprite, 3>::iterator>(
-	    m_asfLevelSprites.begin(),
-	    m_asfLevelSprites.end(),
-	    m_asfLevelSprites.size(),
-	    m_unLevel
-	);
+    ChangeMoveSpriteRect(SPRITE_B2B, m_aprMoveSprites[0].first);
+    ChangeMoveSpriteRect(SPRITE_COMBO, m_aprMoveSprites[3].first);
 
     m_pvbWaitingBlocks = new VirtualBag();
 
     // Get our first mino
-    m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
-    m_aPreviewTetriminos = m_pvbWaitingBlocks->PeekNextPieces();
-    m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
+    GetNewPiece();
+    CalculateHardDropPreview();
     
     // This formats the rectangle holding the board
     SetupOutline(m_sfBoardOutline, BoardOffsetX, BoardOffsetY);
@@ -113,8 +95,8 @@ bool BlockTris::OnInitialize() {
 }
 
 bool BlockTris::OnUpdate(float fFrameTime) {
-    if (m_gsState != GameStates::BlockGeneration)
-	CalculateHardDropPreview();
+    //if (m_gsState != GameStates::BlockGeneration)
+    //	CalculateHardDropPreview();
 
     // Input affecting game states
     bool bHeldKeyPressed = GetKeyStatus(sf::Keyboard::S) == KeyStatus::Pressed;
@@ -124,7 +106,8 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     bool bJustEnteredPause = false;
 
     if (m_gsState != GameStates::Pause && m_gsState != GameStates::GameOver) {
-	if (bPauseKeyReleased) {
+	if (bPauseKeyReleased) 
+	{
 	    m_bSkipInput = true;
 
 	    m_gsSavedState = m_gsState;
@@ -144,7 +127,8 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    !bStateKeyPressed && 
 		(m_gsState == GameStates::BlockFalling ||
 		m_gsState == GameStates::BlockLockDelay)
-	) {
+	    ) 
+	{
 	    m_bAlreadyPressedHeld = true;
 	    m_bSkipInput = true;
 
@@ -160,7 +144,8 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    !bStateKeyPressed && 
 		(m_gsState == GameStates::BlockFalling ||
 		 m_gsState == GameStates::BlockLockDelay)
-	    ) {
+	    ) 
+	{
 	    auto aActiveMinoCoords = m_pActiveTetrimino->GetLogicalCoords()[0];
 	    auto aHardDropMinoCoords = m_pHardDropPreview->GetLogicalCoords()[0];
 
@@ -188,9 +173,12 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	// TODO: have this not be calculated every frame 
 	if (bDownIsPressed &&
 	    m_gsState != GameStates::BlockGeneration &&
-	    m_gsState != GameStates::BlockHit) {
+	    m_gsState != GameStates::BlockHit) 
+	{
 	    m_unStateInterval = std::round(std::max(1.0f, 0.055f * LevelCurveFunction(m_unLevel, m_unLinesPerInterval)));
-	} else {
+	} 
+	else 
+	{
 	    m_unStateInterval = LevelCurveFunction(m_unLevel, m_unLinesPerInterval);
 	}
 
@@ -210,7 +198,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	|   The effect is that when individual button presses are made, the block will    |
 	|   move more or less instantaneously. But when held will move the block in	  |
 	|   that direction at the move timer's speed. This is the intended behavior and   |
-	|   is present in the original Game Boy release of tetris.                        |
+	|   is called Delayed Auto Shift.                                                 |
 	|--------------------------------------------------------------------------------*/
 
 	m_aCurrFrameKeyStates[0] = GetKeyStatus(sf::Keyboard::Left);
@@ -231,7 +219,8 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    m_aCurrFrameKeyStates[1] == KeyStatus::Pressed;
 
 	// If we have a rising edge, interrupt the timer so that the routine fires
-	if (m_bKeyPressedInitialLeft || m_bKeyPressedInitialRight) {
+	if (m_bKeyPressedInitialLeft || m_bKeyPressedInitialRight) 
+	{
 	    m_ullTetriminoMoveTimer = 0;
 	}
 
@@ -239,29 +228,28 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	m_aPrevFrameKeyStates = m_aCurrFrameKeyStates;
 
 	bool bMovedOrRotated = false;
+	bool bMoveLeft = m_bKeyHeldLeft || m_bKeyPressedInitialLeft;
+	bool bMoveRight = m_bKeyHeldRight || m_bKeyPressedInitialRight;
 
 	// Process input if the timer is tripped
 	if (
-	    (m_gsState == GameStates::BlockFalling ||
-	    m_gsState == GameStates::BlockLockDelay)
-	    && m_ullTetriminoMoveTimer == 0
+	    (m_gsState == GameStates::BlockFalling || m_gsState == GameStates::BlockLockDelay) && 
+	    m_ullTetriminoMoveTimer == 0
 	) {
 	    
-	    if (
-		m_pActiveTetrimino->TranslateTetriminoHorizontal(
-		    m_bKeyHeldLeft || m_bKeyPressedInitialLeft,
-		    m_bKeyHeldRight || m_bKeyPressedInitialRight,
-		    m_aLogicalBoard
-		)
-	    ) {
+	    if (m_pActiveTetrimino->TranslateTetriminoHorizontal(bMoveLeft, bMoveRight, m_aLogicalBoard)) 
+	    {
 		m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
 		CalculateHardDropPreview();
 		bMovedOrRotated = true;
 	    }
 
-	    if (m_bKeyPressedInitialLeft || m_bKeyPressedInitialRight) {
+	    if (m_bKeyPressedInitialLeft || m_bKeyPressedInitialRight) 
+	    {
 		m_unMoveInterval = 20;
-	    } else {
+	    }
+	    else 
+	    {
 		m_unMoveInterval = 1;
 	    }
 	}
@@ -270,28 +258,39 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	bool bRightRotation = GetKeyStatus(sf::Keyboard::X) == KeyStatus::Pressed;
 	bool bRotationKeyPressed = bLeftRotation || bRightRotation;
 
-	if (bRotationKeyPressed && !m_bRotationKeyHeld && m_gsState != GameStates::BlockHit) {
-
+	if (
+	    bRotationKeyPressed && 
+	    !m_bRotationKeyHeld && 
+	    (m_gsState == GameStates::BlockFalling || m_gsState == GameStates::BlockLockDelay)
+	) {
 	    sf::Vector2f sfRotationCoefficients = bLeftRotation ?
 		sf::Vector2f(-1.0f, 1.0f) : sf::Vector2f(1.0f, -1.0f);
 
-	    if (m_pActiveTetrimino->RotateTetrimino(sfRotationCoefficients, m_aLogicalBoard)) {
+	    if (m_pActiveTetrimino->RotateTetrimino(sfRotationCoefficients, m_aLogicalBoard)) 
+	    {
 		m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
 		CalculateHardDropPreview();
 		bMovedOrRotated = true;
 		m_tsTPieceSpin = m_pActiveTetrimino->CheckTSpin(m_aLogicalBoard);
+		if (m_tsTPieceSpin != T_SpinTypes::NoSpin) 
+		{
+		    MarkSoundForPlay(SFX_DETECT_T_SPIN);
+		}
 	    }
 	    
 	    m_bRotationKeyHeld = true;
-
-	} else if (!bRotationKeyPressed) {
+	} 
+	else if (!bRotationKeyPressed) 
+	{
 	    m_bRotationKeyHeld = false;
 	}
 
-	if (bMovedOrRotated) {
+	if (bMovedOrRotated) 
+	{
 	    MarkSoundForPlay(SFX_MOVE_ROT);
 
-	    if (m_gsState == GameStates::BlockLockDelay) {
+	    if (m_gsState == GameStates::BlockLockDelay) 
+	    {
 		m_pActiveTetrimino->SetAlphaLevel(255);
 		m_fAlphaT = 0.0f;
 		m_ullLockDelayTimer = 30;
@@ -319,10 +318,9 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	m_unCellsFastDropped = 0;
 	m_unCellsHardDropped = 0;
 	m_fAlphaT = 0.0f;
+	m_tsTPieceSpin = T_SpinTypes::NoSpin;
 
-	m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
-	m_aPreviewTetriminos = m_pvbWaitingBlocks->PeekNextPieces();
-	m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
+	GetNewPiece();
 	CalculateHardDropPreview();
 
 	m_bRefreshPreview = true;
@@ -332,34 +330,12 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	break;
     case GameStates::BlockFalling:
     {
-	if (m_ullGameTicks % m_unStateInterval == 0) {
-
-	    for (int k = 0; k < m_unLinesPerInterval; k++) {
-		// Store the candidate coordinates
-		auto& vTetriminoLogicalCoords = m_pActiveTetrimino->GetLogicalCoords();
-		bool bVerticalCollision = false;
-
-		for (int i = 0; i < 4; i++) {
-		    int xTest = vTetriminoLogicalCoords[i].x;
-		    int yTest = vTetriminoLogicalCoords[i].y + 1;
-
-		    // If we have a vertical hit, we switch to the hit state
-		    if (yTest >= 20 || (yTest >= 0 && !m_aLogicalBoard[yTest][xTest].m_bHidden)) {
-			m_gsState = GameStates::BlockLockDelay;
-			bVerticalCollision = true;
-			MarkSoundForPlay(SFX_HIT);
-			break;
-		    }
-		}
-
-		if (!bVerticalCollision) {
-		    if (GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed)
-			m_unCellsFastDropped++;
-
-		    m_pActiveTetrimino->MoveDown();
-		}
+	if (m_ullGameTicks % m_unStateInterval == 0) 
+	{
+	    for (int k = 0; k < m_unLinesPerInterval; k++) 
+	    {
+		DoMoveDown(m_pActiveTetrimino, true);
 	    }
-
 	}
     }
 	break;
@@ -377,26 +353,33 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    sf::Color sfTetriminoColor = m_pActiveTetrimino->GetColor();
 	    PieceTypes ptTetrimino = m_pActiveTetrimino->GetPieceType();
 
-	    for (auto& sfPileBlockLoc : m_pActiveTetrimino->GetLogicalCoords()) {
-
-		if (sfPileBlockLoc.y < 0) {
+	    for (auto& sfPileBlockLoc : m_pActiveTetrimino->GetLogicalCoords()) 
+	    {
+		if (sfPileBlockLoc.y < 0) 
+		{
 		    bBlockLandedOutside = true;
 		    continue;
 		}
 
+		sf::IntRect sfNewSpriteRect = sf::IntRect(static_cast<int>(ptTetrimino) * SquareSize, 0, SquareSize, SquareSize);
 		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_bHidden = false;
 		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_sfBlockViz.setTextureRect(
-		    sf::IntRect(static_cast<int>(ptTetrimino) * SquareSize, 0, SquareSize, SquareSize)
+		    sfNewSpriteRect
+		);
+		m_aLogicalBoard[sfPileBlockLoc.y][sfPileBlockLoc.x].m_ptaAnim->SetNewBaseSprite(
+		    sfNewSpriteRect
 		);
 		m_aRowMetaData[sfPileBlockLoc.y].first++;
-
 	    }
 
-	    if (bBlockLandedOutside) {
+	    if (bBlockLandedOutside) 
+	    {
 		m_gsState = GameStates::GameOver;
 
-		for (auto& aRow : m_aLogicalBoard) {
-		    for (auto& pbBlock : aRow) {
+		for (auto& aRow : m_aLogicalBoard) 
+		{
+		    for (auto& pbBlock : aRow) 
+		    {
 			if (!pbBlock.m_bHidden)
 			    pbBlock.m_sfBlockViz.setFillColor(sf::Color(128, 128, 128));
 		    }
@@ -405,15 +388,22 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 		break;
 	    }
 
-	    if (CheckLineClears()) {
+	    if (CheckLineClears()) 
+	    {
 		m_gsState = GameStates::LineClearing;
-	    } else {
+	    } 
+	    else 
+	    {
 		m_gsState = GameStates::BlockGeneration;
 	    }
 
+	    m_ullMoveSpriteTimer = 40;
 	    m_ullBlockCollisionTimer = 15;
-	} else {
-	    if (m_ullBlockCollisionTimer == 15) {
+	} 
+	else 
+	{
+	    if (m_ullBlockCollisionTimer == 15) 
+	    {
 		m_pActiveTetrimino->m_ptaAnim->ArmAnimation();
 		MarkSoundForPlay(SFX_LOCK);
 	    }
@@ -426,8 +416,28 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	break;
     case GameStates::LineClearing: 
     {
-	ClearLines();
-	m_gsState = GameStates::BlockGeneration;
+	if (m_ullLineClearTimer == 0) 
+	{
+	    ClearLines();
+	    MarkSoundForPlay(SFX_LINES_DESTROYED);
+	    m_vLineClearRowIndexes.clear();
+	    m_gsState = GameStates::BlockGeneration;
+	    m_ullLineClearTimer = 40;
+	} 
+	else 
+	{
+	    if (m_ullLineClearTimer == 40) 
+	    {
+		for (size_t sztRowIndex : m_vLineClearRowIndexes) 
+		{
+		    for (auto& pbPileBlock : m_aLogicalBoard[sztRowIndex]) 
+		    {
+			pbPileBlock.m_ptaAnim->ArmAnimation();
+		    }
+		}
+	    }
+	    m_ullLineClearTimer--;
+	}
     }
 	break;
     case GameStates::HoldPieceAttempt:
@@ -435,18 +445,24 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	m_ullLockDelayTimer = 30;
 	std::swap(m_pHeldTetrimino, m_pActiveTetrimino);
 
-	m_pHeldTetrimino->SetAlphaLevel(255);
 	m_fAlphaT = 0.0f;
+	m_tsTPieceSpin = T_SpinTypes::NoSpin;
+	m_pHeldTetrimino->SetAlphaLevel(255);
 
-	if (!m_pActiveTetrimino) {
-	    m_gsState = GameStates::BlockGeneration;
-	} else {
-	    m_gsState = GameStates::BlockFalling;
+	if (!m_pActiveTetrimino) 
+	{
+	    GetNewPiece();
+	    CalculateHardDropPreview();
+	    m_bRefreshPreview = true;
+	} 
+	else 
+	{
 	    m_pActiveTetrimino->ResetPieceAndPivot();
-
 	    m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
 	    CalculateHardDropPreview();
 	}
+
+	m_gsState = GameStates::BlockFalling;
 
 	m_bSkipInput = false;
 	m_bHeldChanged = true;
@@ -454,7 +470,6 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	break;
     case GameStates::BlockLockDelay:
     {
-	// TODO: implement lock delay decay
 	auto& sfActiveCoords = m_pActiveTetrimino->GetLogicalCoords();
 	auto& sfHardDropCoords = m_pHardDropPreview->GetLogicalCoords();
 
@@ -465,13 +480,13 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    ),
 	    0.0
 	);
-
 	m_fAlphaT += fFrameTime;
-
 	m_pActiveTetrimino->SetAlphaLevel(nAlphaLevel);
 
-	for (int i = 0; i < 4; i++) {
-	    if (sfActiveCoords[i] != sfHardDropCoords[i]) {
+	for (int i = 0; i < 4; i++) 
+	{
+	    if (sfActiveCoords[i] != sfHardDropCoords[i]) 
+	    {
 		m_gsState = GameStates::BlockFalling;
 		m_pActiveTetrimino->SetAlphaLevel(255);
 		m_fAlphaT = 0.0f;
@@ -480,18 +495,22 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	    }
 	}
 
-	if (m_ullLockDelayTimer == 0) {
+	if (m_ullLockDelayTimer == 0) 
+	{
 	    m_ullLockDelayTimer = 30;
 	    m_pActiveTetrimino->SetAlphaLevel(255);
 	    m_gsState = GameStates::BlockHit;
-	} else {
+	} 
+	else 
+	{
 	    m_ullLockDelayTimer--;
 	}
     }
 	break;
     case GameStates::Pause:
     {
-	if (bPauseKeyReleased && !bJustEnteredPause) {
+	if (bPauseKeyReleased && !bJustEnteredPause) 
+	{
 	    m_bSkipInput = false;
 	    m_gsState = m_gsSavedState;
 	    MarkSoundForPlay(SFX_PAUSE_OUT);
@@ -510,9 +529,21 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 	break;
     }
 
-    // Advance the timers by 1 tick (1/30th of one second)
+    // Advance the timers by 1 tick (1/60th of one second)
     m_ullGameTicks++;
     m_ullTetriminoMoveTimer = (m_ullTetriminoMoveTimer + 1) % m_unMoveInterval;
+
+    if (m_ullMoveSpriteTimer == 0) 
+    {
+	for (auto& prSprite : m_aprMoveSprites) 
+	{
+	    prSprite.second = false;
+	}
+    } 
+    else 
+    {
+	m_ullMoveSpriteTimer--;
+    }
 
     // Drawing routine
     PushDrawableObject(&m_sfBackground);
@@ -524,22 +555,35 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     if (m_gsState == GameStates::BlockHit)
 	m_pActiveTetrimino->DoAnimation();
 
-    if (m_gsState != GameStates::BlockGeneration && m_gsState != GameStates::GameOver) {
-	if (m_gsState != GameStates::Pause)
+    if (m_gsState == GameStates::LineClearing) {
+	for (size_t sztRowIndex : m_vLineClearRowIndexes) 
+	{
+	    for (auto& pbPileBlock : m_aLogicalBoard[sztRowIndex]) 
+	    {
+		if (pbPileBlock.m_ptaAnim->IsPlaying()) 
+		{
+		    auto sfAnimFrameRect = pbPileBlock.m_ptaAnim->StepAnimation();
+		    pbPileBlock.m_sfBlockViz.setTextureRect(sfAnimFrameRect);
+		}
+	    }
+	}
+    }
+
+    if (m_gsState != GameStates::BlockGeneration && m_gsState != GameStates::GameOver) 
+    {
+	if (m_gsState == GameStates::BlockFalling)
 	    DrawTetrimino(m_pHardDropPreview, sf::IntRect(0, 0, 10, 20));
+
 	DrawTetrimino(m_pActiveTetrimino, sf::IntRect(0, 0, 10, 20));
     }
 
-    for (auto& sfShape : m_asfScoreSprites) {
-	PushDrawableObject(&sfShape);
-    }
+    DrawArrayOfObjects(m_asfScoreSprites.begin(), m_asfScoreSprites.end());
+    DrawArrayOfObjects(m_asfLevelSprites.begin(), m_asfLevelSprites.end());
+    DrawArrayOfObjects(m_asfLinesSprites.begin(), m_asfLinesSprites.end());
 
-    for (auto& sfShape : m_asfLevelSprites) {
-	PushDrawableObject(&sfShape);
-    }
-
-    for (auto& sfShape : m_asfLinesSprites) {
-	PushDrawableObject(&sfShape);
+    for (auto& prSprite : m_aprMoveSprites) {
+	if (prSprite.second)
+	    PushDrawableObject(&prSprite.first);
     }
 
     DrawPile();
@@ -547,8 +591,10 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 }
 
 void BlockTris::DrawPile() {
-    for (auto& aLine : m_aLogicalBoard) {
-	for (auto& scPileBlock : aLine) {
+    for (auto& aLine : m_aLogicalBoard) 
+    {
+	for (auto& scPileBlock : aLine) 
+	{
 	    if (!scPileBlock.m_bHidden) {
 		PushDrawableObject(&scPileBlock.m_sfBlockViz);
 	    }
@@ -557,25 +603,7 @@ void BlockTris::DrawPile() {
 }
 
 void BlockTris::CalculateHardDropPreview() {
-    bool bVerticalCollision = false;
-    while (!bVerticalCollision) {
-	auto& vTetriminoLogicalCoords = m_pHardDropPreview->GetLogicalCoords();
-
-	for (int i = 0; i < 4; i++) {
-	    int xTest = vTetriminoLogicalCoords[i].x;
-	    int yTest = vTetriminoLogicalCoords[i].y + 1;
-
-	    if (yTest >= 20 || (yTest >= 0 && !m_aLogicalBoard[yTest][xTest].m_bHidden)) {
-		bVerticalCollision = true;
-		break;
-	    }
-	}
-
-	if (!bVerticalCollision) {
-	    m_pHardDropPreview->MoveDown();
-	}
-    }
-
+    while (!DoMoveDown(m_pHardDropPreview, false));
     m_pHardDropPreview->SetAlphaLevel(127);
 }
 
@@ -588,15 +616,17 @@ void BlockTris::SetupOutline(sf::RectangleShape& sfRect, float fxOffset, float f
 
 void BlockTris::DrawTetrimino(std::shared_ptr<Tetrimino> pttMino, sf::IntRect sfBoundingRect) {
     auto itMinoLogicalCoord = pttMino->GetLogicalCoords().begin();
-    for (auto& sfBlock : pttMino->GetPieceShapes()) {
+    for (auto& sfBlock : pttMino->GetPieceShapes()) 
+    {
 	if (itMinoLogicalCoord->y >= 0)
 	    PushDrawableObject(&sfBlock);
+
 	itMinoLogicalCoord++;
     }
 }
 
-void BlockTris::DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz) {
-    for (auto& sfBlock : aBlocksViz) {
+void BlockTris::DrawTetrimino(std::shared_ptr<Tetrimino> pttMino) {
+    for (auto& sfBlock : pttMino->GetPieceShapes()) {
 	PushDrawableObject(&sfBlock);
     }
 }
@@ -619,34 +649,31 @@ bool BlockTris::CheckLineClears() {
 	bLinesCleared = bDoubleClear || nSinglesClear;
     }
 
-    m_ullPoints += CalculateScore(bFourClear, bTripleClear, bDoubleClear, nSinglesClear);
+    m_bCombo = bLinesCleared && m_bClearedLinesPreviously;
+
+    m_ullPoints += CalculateScore(bFourClear, bTripleClear, bDoubleClear, nSinglesClear, m_vLineClearRowIndexes.size());
     UpdateText();
 
-    m_bCombo = bLinesCleared && m_bClearedLinesPreviously;
     m_bClearedLinesPreviously = bLinesCleared;
+    m_unLinesCleared += m_vLineClearRowIndexes.size();
 
     return bLinesCleared;
 }
 
 void BlockTris::ClearLines() {
-    int nLinesCleared = 0;
+    std::sort(m_vLineClearRowIndexes.begin(), m_vLineClearRowIndexes.end());
 
-    for (int i = 0; i < 20; i++) {
-	if (m_aRowMetaData[i].second) {
-	    nLinesCleared++;
-	    for (int j = i; j >= 1; j--) {
-		std::swap(m_aRowMetaData[j], m_aRowMetaData[j - 1]);
-		std::swap(m_aLogicalBoard[j], m_aLogicalBoard[j - 1]);
-	    }
-	}
-    }
+    for (size_t& sztRowIdx : m_vLineClearRowIndexes) {
+	m_aRowMetaData[sztRowIdx].first = 0;
+	m_aRowMetaData[sztRowIdx].second = false;
 
-    for (int i = 0; i < nLinesCleared; i++) {
-	m_aRowMetaData[i].first = 0;
-	m_aRowMetaData[i].second = false;
-
-	for (auto& plBlock : m_aLogicalBoard[i]) {
+	for (auto& plBlock : m_aLogicalBoard[sztRowIdx]) {
 	    plBlock.m_bHidden = true;
+	}
+
+	for (size_t i = sztRowIdx; i >= 1; i--) {
+	    std::swap(m_aRowMetaData[i], m_aRowMetaData[i - 1]);
+	    std::swap(m_aLogicalBoard[i], m_aLogicalBoard[i - 1]);
 	}
     }
 
@@ -658,8 +685,6 @@ void BlockTris::ClearLines() {
 	}
     }
 
-    int nPrevLinesCleared = m_unLinesCleared;
-    m_unLinesCleared += nLinesCleared;
     RecalculateLevel();
 }
 
@@ -704,13 +729,11 @@ void BlockTris::DrawPreviewAndHeld() {
     }
 
     if (m_pHeldTetrimino) {
-	auto& aHeldPieceShapes = m_pHeldTetrimino->GetPieceShapes();
-	DrawTetrimino(aHeldPieceShapes);
+	DrawTetrimino(m_pHeldTetrimino);
     }
 
-    for (auto& tmPreview : m_aPreviewTetriminos) {
-	auto& aPreviewPieceShapes = tmPreview->GetPieceShapes();
-	DrawTetrimino(aPreviewPieceShapes);
+    for (auto& ptmPreview : m_aPreviewTetriminos) {
+	DrawTetrimino(ptmPreview);
     }
 }
 
@@ -737,82 +760,172 @@ void BlockTris::DrawTetriminoInBox(
 }
 
 void BlockTris::UpdateText() {
-    if (m_unLinesCleared > 999)
-	m_unLinesCleared = 999;
-
-    if (m_unLevel > 999)
-	m_unLevel = 999;
+    if (m_unLinesCleared > 9999)
+	m_unLinesCleared = 9999;
 
     if (m_ullPoints > 9999999)
 	m_ullPoints = 9999999;
 
-    ReassignDigits<std::array<sf::Sprite, 3>::iterator>(
-	    m_asfLinesSprites.begin(),
-	    m_asfLinesSprites.end(),
-	    m_asfLinesSprites.size(),
-	    m_unLinesCleared
-	);
+    auto itLinesSprBegin = m_asfLinesSprites.begin(), itLinesSprEnd = m_asfLinesSprites.end();
+    auto itLevelsSprBegin = m_asfLevelSprites.begin(), itLevelsSprEnd = m_asfLevelSprites.end();
+    auto itScoreSprBegin = m_asfScoreSprites.begin(), itScoreSprEnd = m_asfScoreSprites.end();
 
-    ReassignDigits<std::array<sf::Sprite, 3>::iterator>(
-	    m_asfLevelSprites.begin(),
-	    m_asfLevelSprites.end(),
-	    m_asfLevelSprites.size(),
-	    m_unLevel
-	);
-
-    ReassignDigits<std::array<sf::Sprite, 7>::iterator>(
-	    m_asfScoreSprites.begin(),
-	    m_asfScoreSprites.end(),
-	    m_asfScoreSprites.size(),
-	    m_ullPoints
-	);
+    ReassignDigits(itLinesSprBegin, itLinesSprEnd, m_asfLinesSprites.size(), m_unLinesCleared);
+    ReassignDigits(itLevelsSprBegin, itLevelsSprEnd, m_asfLevelSprites.size(), m_unLevel);
+    ReassignDigits(itScoreSprBegin, itScoreSprEnd, m_asfScoreSprites.size(), m_ullPoints);
 }
 
 void BlockTris::RecalculateLevel() {
-    if (m_unLinesCleared / (m_unLevel * 10) > 0) {
+    if (m_unLinesCleared / (m_unLevel * 10) > 0 && m_unLevel < 20) {
 	m_unLevel++;
 	MarkSoundForPlay(SFX_LEVEL_UP);
 	m_unStateInterval = LevelCurveFunction(m_unLevel, m_unLinesPerInterval);
     }
 }
 
-unsigned int BlockTris::CalculateScore(bool bFour, bool bTriple, bool bDouble, int nSingles) {
-    unsigned int unSoftAndHardDropPts = m_unCellsFastDropped + 2.0 * m_unCellsHardDropped;
+void BlockTris::GetNewPiece() {
+    m_pActiveTetrimino = m_pvbWaitingBlocks->GetNextPiece();
+    m_aPreviewTetriminos = m_pvbWaitingBlocks->PeekNextPieces();
+    m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
+}
 
+bool BlockTris::DoMoveDown(std::shared_ptr<Tetrimino> pTetrimino, bool bIsActiveTetrimino) {
+    auto& vTetriminoLogicalCoords = pTetrimino->GetLogicalCoords();
+    bool bVerticalCollision = false;
+
+    for (int i = 0; i < 4; i++) {
+	int xTest = vTetriminoLogicalCoords[i].x;
+	int yTest = vTetriminoLogicalCoords[i].y + 1;
+
+	if (yTest >= 20 || (yTest >= 0 && !m_aLogicalBoard[yTest][xTest].m_bHidden))
+	{
+	    bVerticalCollision = true;
+	    break;
+	}
+    }
+
+    if (!bVerticalCollision)
+    {
+	pTetrimino->MoveDown();
+
+	if (bIsActiveTetrimino) 
+	{
+	    if (GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed) 
+	    {
+		m_unCellsFastDropped++;
+	    }
+
+	    CalculateHardDropPreview();
+	}
+    } 
+    else if (bIsActiveTetrimino)
+    {
+	m_gsState = GameStates::BlockLockDelay;
+	MarkSoundForPlay(SFX_HIT);
+    }
+
+    return bVerticalCollision;
+}
+
+unsigned int BlockTris::CalculateScore(bool bFour, bool bTriple, bool bDouble, int nSingles, int nLinesCleared) {
+    unsigned int unSoftAndHardDropPts = m_unCellsFastDropped + 2.0 * m_unCellsHardDropped;
     unsigned int unSinglesPts = 100 * nSingles;
     unsigned int unDoublePts = 300 * bDouble;
     unsigned int unTriplePts = 500 * bTriple;
     unsigned int unQuadPts = 800 * bFour;
-
     unsigned int unT_SpinPts = 0;
+    unsigned int unTotal = 0;
 
-    // TODO: This could be easier if we passed the number of lines cleared
-    if (m_tsTPieceSpin == T_SpinTypes::FullSpin) {
-	if (bTriple) {
-	    unT_SpinPts = 1600;
-	} else if (bDouble || nSingles == 2) {
-	    unT_SpinPts = 1200;
-	} else if (nSingles == 1) {
-	    unT_SpinPts = 800;
-	} else {
-	    unT_SpinPts = 400;
+    if (m_tsTPieceSpin == T_SpinTypes::FullSpin) 
+    {
+	unT_SpinPts = (nLinesCleared + 1) * 400;
+	ChangeMoveSpriteRect(SPRITE_T_SPIN, m_aprMoveSprites[1].first);
+    } 
+    else if (m_tsTPieceSpin == T_SpinTypes::MiniSpin) 
+    {
+	unT_SpinPts = std::round(std::pow(2.0, nLinesCleared)) * 100;
+	ChangeMoveSpriteRect(SPRITE_MINI_T_SPIN, m_aprMoveSprites[1].first);
+    }
+
+    if (unT_SpinPts > 0) 
+    {
+	MarkSoundForPlay(SFX_T_SPIN_AWARD);
+
+	m_bDifficultMove = nLinesCleared ? true : m_bDifficultMove;
+	m_aprMoveSprites[1].second = true;
+
+	if (nLinesCleared > 0) 
+	{
+	    ChangeMoveSpriteRect(nLinesCleared, m_aprMoveSprites[2].first);
+	    m_aprMoveSprites[2].second = true;;
 	}
-    } else if (m_tsTPieceSpin == T_SpinTypes::MiniSpin) {
-	if (bDouble || nSingles == 2) {
-	    unT_SpinPts = 400;
-	} else if (nSingles == 1) {
-	    unT_SpinPts = 200;
-	} else {
-	    unT_SpinPts = 100;
+    } 
+    else 
+    {
+	if (bFour)
+	{
+	    m_bDifficultMove = true;
+	    MarkSoundForPlay(SFX_LINE_CLEAR_QUADRUPLE);
+	    ChangeMoveSpriteRect(SPRITE_QUAD, m_aprMoveSprites[2].first);
+	    m_aprMoveSprites[2].second = true;
+	}
+	else if (bTriple || bDouble || nSingles)
+	{
+	    MarkSoundForPlay(SFX_LINE_CLEAR_NORMAL);
+
+	    if (bTriple) {
+		ChangeMoveSpriteRect(SPRITE_TRIPLE, m_aprMoveSprites[2].first);
+	    } 
+	    else if (bDouble) 
+	    {
+		ChangeMoveSpriteRect(SPRITE_DOUBLE, m_aprMoveSprites[2].first);
+	    }
+	    else 
+	    {
+		ChangeMoveSpriteRect(SPRITE_SINGLE, m_aprMoveSprites[2].first);
+	    }
+
+	    m_aprMoveSprites[2].second = true;
 	}
     }
 
-    unsigned int nTotal = unSinglesPts + unDoublePts + unTriplePts + unQuadPts + unT_SpinPts;
-    nTotal += m_bCombo ? 50 : 0;
-    nTotal *= m_unLevel;
-    nTotal += unSoftAndHardDropPts;
+    if (nLinesCleared > 0) 
+    {
+	m_bBackToBack = m_bDifficultMove && m_bLastDidDifficultMove;
+	m_bLastDidDifficultMove = m_bDifficultMove;
+	m_bDifficultMove = false;
 
-    return nTotal;
+	if (m_bBackToBack) 
+	{
+	    m_aprMoveSprites[0].second = true;
+	    if (m_tsTPieceSpin == T_SpinTypes::MiniSpin && nLinesCleared == 2)
+	    {
+		unT_SpinPts += 200;
+	    }
+	    else if ((m_tsTPieceSpin == T_SpinTypes::FullSpin && nLinesCleared == 1) || bFour)
+	    {
+		unTotal += 400;
+	    }
+	    else if (m_tsTPieceSpin == T_SpinTypes::FullSpin && nLinesCleared >= 3)
+	    {
+		unT_SpinPts = (nLinesCleared + 1) * 600;
+	    }
+	}
+    }
+
+    unTotal = unSinglesPts + unDoublePts + unTriplePts + unQuadPts + unT_SpinPts;
+
+    if (m_bCombo) 
+    {
+	unTotal += 50;
+	m_aprMoveSprites[3].second = true;
+	MarkSoundForPlay(SFX_COMBO);
+    }
+
+    unTotal *= m_unLevel;
+    unTotal += unSoftAndHardDropPts;
+
+    return unTotal;
 }
 
 bool BlockTris::LineBundle(int nLines) {
@@ -821,19 +934,27 @@ bool BlockTris::LineBundle(int nLines) {
     bool bHasBundle = false;
     std::vector<RowMetaData::iterator> vRowCandidates;
 
-    for (int i = 0; i <= 20 - nLines; i++) {
-	for (int j = i; j < i + nLines; j++) {
-	    if (m_aRowMetaData[j].first == 10 && !m_aRowMetaData[j].second) {
+    for (int i = 0; i <= 20 - nLines; i++) 
+    {
+	for (int j = i; j < i + nLines; j++) 
+	{
+	    if (m_aRowMetaData[j].first == 10 && !m_aRowMetaData[j].second) 
+	    {
 		vRowCandidates.push_back(m_aRowMetaData.begin() + j);
 	    }
 	}
 
-	if (vRowCandidates.size() != nLines) {
+	if (vRowCandidates.size() != nLines) 
+	{
 	    vRowCandidates.clear();
-	} else {
+	} 
+	else 
+	{
 	    bHasBundle = true;
-	    for (auto& itRow : vRowCandidates) {
+	    for (auto& itRow : vRowCandidates) 
+	    {
 		itRow->second = true;
+		m_vLineClearRowIndexes.push_back(std::distance(m_aRowMetaData.begin(), itRow));
 	    }
 	    break;
 	}
@@ -845,12 +966,20 @@ bool BlockTris::LineBundle(int nLines) {
 unsigned int BlockTris::LevelCurveFunction(unsigned int nLevel, unsigned int& nCellsToDrop) {
     float fInterval = 60.0f * std::pow(0.8 - ((nLevel - 1.0) * 0.007), nLevel - 1.0);
 
-    if (fInterval <= 1) {
+    if (fInterval <= 1) 
+    {
 	nCellsToDrop = std::min(20u, (unsigned int) std::round(1.0f / fInterval));
 	return 1;
-    } else {
+    } 
+    else 
+    {
 	return std::round(fInterval);
     }
+}
+
+void BlockTris::ChangeMoveSpriteRect(unsigned int nEntry, sf::Sprite& sfSprite) {
+    sf::IntRect sfTextureRect = sf::IntRect(0, nEntry * MoveSpriteHeight, MoveSpriteWidth, MoveSpriteHeight);
+    sfSprite.setTextureRect(sfTextureRect);
 }
 
 BlockTris::BlockTris()

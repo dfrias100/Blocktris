@@ -35,6 +35,7 @@ class VirtualBag;
 
 #include <array>
 #include <utility>
+#include <vector>
 #include <memory>
 #include <cmath>
 #include <string>
@@ -66,6 +67,7 @@ static const std::string szSfxFolder = "SFX";
 
 static const std::string szBlockAtlas = "block_atlas.png";
 static const std::string szDigitAtlas = "digit_atlas.png";
+static const std::string szMoves = "moves.png";
 static const std::string szBackground = "bg.png";
 
 static const std::string szSfxMov = "sfx_movement_ladder1a.wav";
@@ -74,7 +76,19 @@ static const std::string szSfxLock = "sfx_sounds_impact1.wav";
 static const std::string szSfxLvUp = "sfx_sounds_powerup1.wav";
 static const std::string szSfxPauseIn = "sfx_sounds_pause3_in.wav";
 static const std::string szSfxPauseOut = "sfx_sounds_pause3_out.wav";
+static const std::string szSfxLinesDestroyed = "sfx_exp_medium1.wav";
+static const std::string szSfxLineClearNormal = "sfx_sounds_button2.wav";
+static const std::string szSfxLineClearQuadruple = "sfx_sounds_fanfare1.wav";
+static const std::string szSfxT_SpinDetected = "sfx_movement_dooropen2.wav";
+static const std::string szSfxT_Spin = "sfx_sounds_fanfare3.wav";
+static const std::string szSfxCombo = "sfx_coin_cluster5.wav";
 
+static const std::array<std::string, 12> aSfxStrings = {
+    szSfxMov, szSfxHit, szSfxLock,
+    szSfxLvUp, szSfxPauseIn, szSfxPauseOut,
+    szSfxLinesDestroyed, szSfxLineClearNormal, szSfxLineClearQuadruple,
+    szSfxT_SpinDetected, szSfxT_Spin, szSfxCombo
+};
 
 /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
   Class:    BlockTris
@@ -102,7 +116,24 @@ private:
 	SFX_LOCK,
 	SFX_LEVEL_UP,
 	SFX_PAUSE_IN,
-	SFX_PAUSE_OUT
+	SFX_PAUSE_OUT,
+	SFX_LINES_DESTROYED,
+	SFX_LINE_CLEAR_NORMAL, 
+	SFX_LINE_CLEAR_QUADRUPLE,
+	SFX_DETECT_T_SPIN,
+	SFX_T_SPIN_AWARD,
+	SFX_COMBO
+    };
+
+    enum MoveSprites {
+	SPRITE_B2B,
+	SPRITE_SINGLE,
+	SPRITE_DOUBLE,
+	SPRITE_TRIPLE,
+	SPRITE_QUAD,
+	SPRITE_T_SPIN,
+	SPRITE_MINI_T_SPIN,
+	SPRITE_COMBO
     };
 
     virtual bool OnInitialize() override;
@@ -112,7 +143,7 @@ private:
     void DrawPile();
     void CalculateHardDropPreview();
     void SetupOutline(sf::RectangleShape& sfRect, float fxOffset, float fyOffset);
-    void DrawTetrimino(std::array<sf::RectangleShape, 4>& aBlocksViz);
+    void DrawTetrimino(std::shared_ptr<Tetrimino> pttMino);
     void DrawTetrimino(std::shared_ptr<Tetrimino> pttMino, sf::IntRect sfBoundingRect);
     bool CheckLineClears();
     void ClearLines();
@@ -125,7 +156,10 @@ private:
     );
     void UpdateText();
     void RecalculateLevel();
-    unsigned int CalculateScore(bool bFour, bool bTriple, bool bDouble, int nSingles);
+    void GetNewPiece();
+    bool DoMoveDown(std::shared_ptr<Tetrimino> pTetrimino, bool bIsActiveTetrimino);
+    void ChangeMoveSpriteRect(unsigned int nEntry, sf::Sprite& sfSprite);
+    unsigned int CalculateScore(bool bFour, bool bTriple, bool bDouble, int nSingles, int nLinesCleared);
     bool LineBundle(int nLines);
     unsigned int LevelCurveFunction(unsigned int nLevel, unsigned int& nCellsToDrop);
 
@@ -135,11 +169,15 @@ private:
     template<typename Iter>
     void SetupDigits(Iter itFirst, Iter itLast, float yOffset);
 
+    template<typename Iter>
+    void DrawArrayOfObjects(Iter itFirst, Iter itLast);
+
     // Data structures representing the state of the game and inputs
     Board m_aLogicalBoard;
     std::array<std::pair<unsigned int, bool>, 20> m_aRowMetaData;
     std::array<KeyStatus, 2> m_aPrevFrameKeyStates;
     std::array<KeyStatus, 2> m_aCurrFrameKeyStates;
+    std::vector<size_t> m_vLineClearRowIndexes;
 
     // SFML objects here
     sf::RectangleShape m_sfBoardOutline;
@@ -147,12 +185,14 @@ private:
     sf::RectangleShape m_sfHeldOutline;
     sf::Texture m_sfBgTexture;
     sf::Texture m_sfDigitsTexture;
+    sf::Texture m_sfMovesTexture;
     sf::Sprite m_sfBackground;
     sf::Sound m_sfSoundEffectControl;
     std::array<sf::Sprite, 7> m_asfScoreSprites;
-    std::array<sf::Sprite, 3> m_asfLinesSprites;
-    std::array<sf::Sprite, 3> m_asfLevelSprites;
-    std::array<sf::SoundBuffer, 6> m_asfSoundEffect;
+    std::array<sf::Sprite, 4> m_asfLinesSprites;
+    std::array<sf::Sprite, 2> m_asfLevelSprites;
+    std::array<std::pair<sf::Sprite, bool>, 4> m_aprMoveSprites;
+    std::array<sf::SoundBuffer, 12> m_asfSoundEffect;
 
     // Tetrimino related objects
     VirtualBag* m_pvbWaitingBlocks;
@@ -178,6 +218,8 @@ private:
     bool m_bCombo = false;
     bool m_bClearedLinesPreviously = false;
     bool m_bBackToBack = false;
+    bool m_bDifficultMove = false;
+    bool m_bLastDidDifficultMove = false;
     T_SpinTypes m_tsTPieceSpin = T_SpinTypes::NoSpin;
 
     // Timers and speeds
@@ -189,6 +231,8 @@ private:
     unsigned long long m_ullLockDelayTimer = 30;
     unsigned long long m_ullBlockCollisionTimer = 15;
     unsigned long long m_ullGameTicks = 1;
+    unsigned long long m_ullLineClearTimer = 40;
+    unsigned long long m_ullMoveSpriteTimer = 40;
     float m_fAlphaT = 0.0f;
 
     // Player statistics
@@ -230,6 +274,13 @@ void BlockTris::SetupDigits(Iter itFirst, Iter itLast, float yOffset) {
 	itFirst->setTexture(m_sfDigitsTexture);
 	itFirst->setTextureRect(sf::IntRect(0, 0, FontWidth, FontHeight));
 	xfOffset += FontWidth;
+    }
+}
+
+template<typename Iter>
+inline void BlockTris::DrawArrayOfObjects(Iter itFirst, Iter itLast) {
+    for (; itFirst != itLast; itFirst++) {
+	PushDrawableObject(&(*itFirst));
     }
 }
 
