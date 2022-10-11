@@ -47,7 +47,7 @@
     <ClInclude Include="Source\Blocktris\Tetrimino\Tetrimino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Blocktris\PieceConstants.h">
+    <ClInclude Include="Source\Blocktris\ConstantsEnums.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Blocktris\VirtualBag\VirtualBag.h">

@@ -44,7 +44,7 @@ class VirtualBag;
 //    Local folder includes    //
 /////////////////////////////////
 #include "PileBlock/PileBlock.h"
-#include "PieceConstants.h"
+#include "ConstantsEnums.h"
 #include "Tetrimino/Tetrimino.h"
 #include "VirtualBag/VirtualBag.h"
 
@@ -174,7 +174,7 @@ private:
 
     // Data structures representing the state of the game and inputs
     Board m_aLogicalBoard;
-    std::array<std::pair<unsigned int, bool>, 20> m_aRowMetaData;
+    std::array<std::pair<unsigned int, bool>, CELLS_VERTICAL> m_aRowMetaData;
     std::array<KeyStatus, 2> m_aPrevFrameKeyStates;
     std::array<KeyStatus, 2> m_aCurrFrameKeyStates;
     std::vector<size_t> m_vLineClearRowIndexes;
@@ -191,7 +191,7 @@ private:
     std::array<sf::Sprite, 7> m_asfScoreSprites;
     std::array<sf::Sprite, 4> m_asfLinesSprites;
     std::array<sf::Sprite, 2> m_asfLevelSprites;
-    std::array<std::pair<sf::Sprite, bool>, 4> m_aprMoveSprites;
+    std::array<std::pair<sf::Sprite, bool>, 4> m_aprHudSprites;
     std::array<sf::SoundBuffer, 12> m_asfSoundEffect;
 
     // Tetrimino related objects
@@ -223,16 +223,15 @@ private:
     T_SpinTypes m_tsTPieceSpin = T_SpinTypes::NoSpin;
 
     // Timers and speeds
-    unsigned int m_unStateInterval = 60;
+    unsigned int m_unFallRate = FALL_RATE_INITIAL;
     unsigned int m_unLinesPerInterval = 1;
-    unsigned int m_unFallInterval = 60;
-    unsigned int m_unMoveInterval = 1;
+    unsigned int m_unHorizontalMoveRate = DAS_RATE;
     unsigned long long m_ullTetriminoMoveTimer = 1;
-    unsigned long long m_ullLockDelayTimer = 30;
-    unsigned long long m_ullBlockCollisionTimer = 15;
+    unsigned long long m_ullLockDelayTimer = LOCK_DELAY;
+    unsigned long long m_ullBlockCollisionTimer = BLOCK_COLLISION_DELAY;
     unsigned long long m_ullGameTicks = 1;
-    unsigned long long m_ullLineClearTimer = 40;
-    unsigned long long m_ullMoveSpriteTimer = 40;
+    unsigned long long m_ullLineClearTimer = LINE_CLEAR_DELAY;
+    unsigned long long m_ullHudSpriteTimer = HUD_SPRITE_DELAY;
     float m_fAlphaT = 0.0f;
 
     // Player statistics

@@ -36,6 +36,27 @@ static constexpr int MoveSpriteHeight = 28;
 static constexpr int FontWidth = 25;
 static constexpr int FontHeight = 31;
 
+static constexpr unsigned long long QUARTER_SECOND = 15;
+static constexpr unsigned long long HALF_SECOND = 30;
+static constexpr unsigned long long THREE_QUARTER_SECOND = 45;
+static constexpr unsigned long long ONE_SECOND = 60;
+
+static constexpr unsigned long long FALL_RATE_INITIAL = ONE_SECOND;
+static constexpr unsigned long long LOCK_DELAY = HALF_SECOND;
+static constexpr unsigned long long BLOCK_COLLISION_DELAY = QUARTER_SECOND;
+static constexpr unsigned long long LINE_CLEAR_DELAY = THREE_QUARTER_SECOND;
+static constexpr unsigned long long HUD_SPRITE_DELAY = THREE_QUARTER_SECOND;
+
+static constexpr unsigned long long MAX_LEVEL = 20;
+static constexpr unsigned long long MAX_SCORE = 9999999;
+static constexpr unsigned long long MAX_LINES = 9999;
+
+static constexpr long long CELLS_VERTICAL = 20;
+static constexpr long long CELLS_HORIZONTAL = 10;
+
+static constexpr unsigned long long DAS_INITIAL = 20;
+static constexpr unsigned long long DAS_RATE = 1;
+
 enum class PieceTypes {
     I_Piece = 0,
     J_Piece = 1,

@@ -141,7 +141,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Blocktris\Blocktris.h" />
-    <ClInclude Include="Source\Blocktris\PieceConstants.h" />
+    <ClInclude Include="Source\Blocktris\ConstantsEnums.h" />
     <ClInclude Include="Source\Blocktris\PileBlock\PileBlock.h" />
     <ClInclude Include="Source\Blocktris\TetriminoAnimation\TetriminoAnimation.h" />
     <ClInclude Include="Source\Blocktris\Tetrimino\Tetrimino.h" />

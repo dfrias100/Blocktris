@@ -233,9 +233,9 @@ bool Tetrimino::RotateTetrimino(sf::Vector2f sfRotationCoefficents,
 	for (auto& sfLogicalCoord : vTetriminoCoords) {
 	    sfLogicalCoord += sfTranslationVector;
 	    if (
-		sfLogicalCoord.x <  0 ||
-		sfLogicalCoord.x >  9 ||
-		sfLogicalCoord.y > 19 ||
+		sfLogicalCoord.x <  0                ||
+		sfLogicalCoord.x >= CELLS_HORIZONTAL ||
+		sfLogicalCoord.y >= CELLS_VERTICAL   ||
 		(
 		    sfLogicalCoord.y >= 0 && 
 		    !brdGameField[sfLogicalCoord.y][sfLogicalCoord.x].m_bHidden
@@ -285,7 +285,7 @@ bool Tetrimino::TranslateTetriminoHorizontal(bool bLeft, bool bRight, Board& brd
 	if (bLeft) sfCoords.x--;
 	if (bRight) sfCoords.x++;
 
-	if (sfCoords.x < 0 || sfCoords.x > 9 || (sfCoords.y >= 0 && !brdGameField[sfCoords.y][sfCoords.x].m_bHidden)) 
+	if (sfCoords.x < 0 || sfCoords.x >= CELLS_HORIZONTAL || (sfCoords.y >= 0 && !brdGameField[sfCoords.y][sfCoords.x].m_bHidden)) 
 	{
 	    bHorizontalCollision = true;
 	    return false;
@@ -351,10 +351,10 @@ T_SpinTypes Tetrimino::CheckTSpin(Board& brdGameField) {
 	sfPivot += aTestCorners[i];
 
 	if (
-	    sfPivot.x >  9 ||
-	    sfPivot.x <  0 ||
-	    sfPivot.y > 19 ||
-	    sfPivot.y <  0 ||
+	    sfPivot.x >= CELLS_HORIZONTAL ||
+	    sfPivot.x <  0                ||
+	    sfPivot.y >= CELLS_VERTICAL   ||
+	    sfPivot.y <  0                ||
 	    !brdGameField[sfPivot.y][sfPivot.x].m_bHidden
 	) {
 	    if (i < 2) nFrontCorners++;

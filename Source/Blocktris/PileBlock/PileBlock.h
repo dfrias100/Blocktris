@@ -32,7 +32,7 @@
 /////////////////////////////////
 //    Local folder includes    //
 /////////////////////////////////
-#include "../PieceConstants.h"
+#include "../ConstantsEnums.h"
 #include "../TetriminoAnimation/TetriminoAnimation.h"
 
 struct PileBlock {
@@ -46,7 +46,7 @@ struct PileBlock {
 /////////////////////////////////
 //          Typedefs           //
 /////////////////////////////////
-typedef std::array<std::array<PileBlock, 10>, 20> Board;
+typedef std::array<std::array<PileBlock, CELLS_HORIZONTAL>, CELLS_VERTICAL> Board;
 
 /////////////////////////////////
 //     Function Definitons     //
