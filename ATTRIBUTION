@@ -1,0 +1,16 @@
+This project uses various assets from third parties; here are the attributions for these assets and where they are used.
+
+"Wang ‘Blob’ Tileset" by Guy -- http://www.cr31.co.uk/ -- is licensed under CC0 -- Public Domain.
+	- Used in "bg.png".
+
+"Glossy font 11x16" by shiru8bit -- http://shiru.untergrund.net/ -- is licensed under CC-BY-3.0 -- https://creativecommons.org/licenses/by/3.0/.
+	- Used in "bg.png".
+	- Used in "digit_atlas.png"
+	- Used in "moves.png".
+	- Letters were resized and slightly modified.
+
+"Retro Color Puzzle Assets" by Haley Halcyon -- https://2gd4.me/ -- is licensed under CC-BY-4.0 -- https://creativecommons.org/licenses/by/4.0/.
+	- Used in "block_atlas.png"; block base was used to create different colored blocks.
+	
+"512 Sound Effects (8-bit style)" by SubspaceAudio -- https://juhanijunkala.com/ -- is licensed under CC0 -- Public Domain.
+	-All sound effects in the SFX folder.

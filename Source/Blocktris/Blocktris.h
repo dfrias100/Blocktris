@@ -148,19 +148,14 @@ private:
     bool CheckLineClears();
     void ClearLines();
     void DrawPreviewAndHeld();
-    void DrawTetriminoInBox(
-	std::array<sf::RectangleShape, 4>& aBlocksViz, 
-	sf::Vector2f sfPivot,
-	sf::Vector2f sfCenter, 
-	float fVerticalOffset
-    );
+    void DrawTetriminoInBox(std::shared_ptr<Tetrimino> pttMino, sf::Vector2f sfCenter, float fVerticalOffset);
     void UpdateText();
     void RecalculateLevel();
     void GetNewPiece();
+    bool MarkFullLines();
     bool DoMoveDown(std::shared_ptr<Tetrimino> pTetrimino, bool bIsActiveTetrimino);
     void ChangeMoveSpriteRect(unsigned int nEntry, sf::Sprite& sfSprite);
-    unsigned int CalculateScore(bool bFour, bool bTriple, bool bDouble, int nSingles, int nLinesCleared);
-    bool LineBundle(int nLines);
+    unsigned int CalculateScore(int nLinesCleared);
     unsigned int LevelCurveFunction(unsigned int nLevel, unsigned int& nCellsToDrop);
 
     template<typename Iter>
@@ -174,7 +169,7 @@ private:
 
     // Data structures representing the state of the game and inputs
     Board m_aLogicalBoard;
-    std::array<std::pair<unsigned int, bool>, CELLS_VERTICAL> m_aRowMetaData;
+    std::array<unsigned int, CELLS_VERTICAL> m_aRowMetaData;
     std::array<KeyStatus, 2> m_aPrevFrameKeyStates;
     std::array<KeyStatus, 2> m_aCurrFrameKeyStates;
     std::vector<size_t> m_vLineClearRowIndexes;

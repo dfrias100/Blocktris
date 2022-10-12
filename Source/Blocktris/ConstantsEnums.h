@@ -78,6 +78,11 @@ static constexpr int NUM_ORIENTATIONS = 4;
 static constexpr unsigned long long DAS_INITIAL = 20;
 static constexpr unsigned long long DAS_RATE = 1;
 
+static constexpr size_t B2B_SPRITE_IDX = 0;
+static constexpr size_t T_SPIN_SPRITE_IDX = 1;
+static constexpr size_t LINE_CLEAR_SPRITE_IDX = 2;
+static constexpr size_t COMBO_SPRITE_IDX = 3;
+
 enum class PieceTypes {
     I_Piece = 0,
     J_Piece = 1,

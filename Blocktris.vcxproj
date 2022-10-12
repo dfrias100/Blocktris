@@ -84,6 +84,10 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -100,6 +104,10 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -113,6 +121,15 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>XCOPY $(SolutionDir)Assets $(SolutionDir)$(Platform)\$(Configuration)\Assets /E /H /C /I /Y
+COPY $(SolutionDir)LICENSE $(SolutionDir)$(Platform)\$(Configuration)\LICENSE /Y
+COPY $(SolutionDir)ATTRIBUTION $(SolutionDir)$(Platform)\$(Configuration)\ATTRIBUTION /Y</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -129,6 +146,15 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>XCOPY $(SolutionDir)Assets $(SolutionDir)$(Platform)\$(Configuration)\Assets /E /H /C /I /Y
+COPY $(SolutionDir)LICENSE $(SolutionDir)$(Platform)\$(Configuration)\LICENSE /Y
+COPY $(SolutionDir)ATTRIBUTION $(SolutionDir)$(Platform)\$(Configuration)\ATTRIBUTION /Y</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Blocktris\Blocktris.cpp" />
