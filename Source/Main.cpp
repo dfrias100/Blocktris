@@ -18,8 +18,9 @@
 
 #include "Blocktris/Blocktris.h"
 
-int main(int argc, char* argv) {
+int main(int argc, char** argv) {
     BlockTris* blocktrisGame = new BlockTris();
     int nRetVal = blocktrisGame->RunGame();
+    delete blocktrisGame;
     return nRetVal;
 }
