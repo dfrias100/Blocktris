@@ -32,13 +32,13 @@ class Tetrimino;
 class VirtualBag {
 private:
     std::array<PieceTypes, 7> m_aShuffledPieces = {
-	PieceTypes::I_Piece,
-	PieceTypes::J_Piece,
-	PieceTypes::L_Piece,
-	PieceTypes::O_Piece,
-	PieceTypes::S_Piece,
-	PieceTypes::T_Piece,
-	PieceTypes::Z_Piece
+        PieceTypes::I_Piece,
+        PieceTypes::J_Piece,
+        PieceTypes::L_Piece,
+        PieceTypes::O_Piece,
+        PieceTypes::S_Piece,
+        PieceTypes::T_Piece,
+        PieceTypes::Z_Piece
     };
 
     std::list<std::shared_ptr<Tetrimino>> m_lstPieceQueue;

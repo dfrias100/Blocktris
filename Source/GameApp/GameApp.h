@@ -45,17 +45,17 @@ class GameApp {
 public:
     // Enums for common FPS locks
     enum class FPSControl {
-	NONE = 0,
-	Locked30 = 30,
-	Locked60 = 60
+        NONE = 0,
+        Locked30 = 30,
+        Locked60 = 60
     };
 
 protected:
     // Provides a way to easily store keyboard presses
     enum class KeyStatus {
-	NotPressed = 0,
-	Pressed = 1,
-	Released = 2
+        NotPressed = 0,
+        Pressed = 1,
+        Released = 2
     };
 
 private:

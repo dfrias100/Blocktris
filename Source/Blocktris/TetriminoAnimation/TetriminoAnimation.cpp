@@ -38,18 +38,18 @@ bool TetriminoAnimation::IsPlaying() {
 
 sf::IntRect TetriminoAnimation::StepAnimation() {
     if (m_unCurrIndex < m_vAnimIndexes.size() && m_bAnimating) {
-	if (m_unFrames++ % m_unFrameDelay == 0) { 
-	    auto sfNextSprite = m_sfBaseSprite;
-	    sfNextSprite.top = m_vAnimIndexes[m_unCurrIndex++] * sfNextSprite.height;
-	    return sfNextSprite;
-	} else {
-	    auto sfNextSprite = m_sfBaseSprite;
-	    sfNextSprite.top = m_vAnimIndexes[m_unCurrIndex] * sfNextSprite.height;
-	    return sfNextSprite;
-	}
+		if (m_unFrames++ % m_unFrameDelay == 0) { 
+			auto sfNextSprite = m_sfBaseSprite;
+			sfNextSprite.top = m_vAnimIndexes[m_unCurrIndex++] * sfNextSprite.height;
+			return sfNextSprite;
+		} else {
+			auto sfNextSprite = m_sfBaseSprite;
+			sfNextSprite.top = m_vAnimIndexes[m_unCurrIndex] * sfNextSprite.height;
+			return sfNextSprite;
+		}
     } else {
-	m_bAnimating = false;
-	return m_sfBaseSprite;
+		m_bAnimating = false;
+		return m_sfBaseSprite;
     }
 }
 

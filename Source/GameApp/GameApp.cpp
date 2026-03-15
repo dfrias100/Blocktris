@@ -24,9 +24,9 @@ void GameApp::ResetReleasedKeys() {
     auto hmIterator = m_hmKeys.begin();
 
     for (; hmIterator != m_hmKeys.end(); hmIterator++) {
-	if (hmIterator->second == KeyStatus::Released) {
-	    m_hmKeys[hmIterator->first] = KeyStatus::NotPressed;
-	}
+		if (hmIterator->second == KeyStatus::Released) {
+			m_hmKeys[hmIterator->first] = KeyStatus::NotPressed;
+		}
     }
 }
 
@@ -34,18 +34,18 @@ inline void GameApp::HandleInput() {
     // If we have close event, send a close message,
     // otherwise we record any other keypress
     while (m_pWindow->pollEvent(m_WindowEvent)) {
-	switch (m_WindowEvent.type) {
-	case sf::Event::Closed:
-	    m_pWindow->close();
-	    break;
-	case sf::Event::KeyPressed:
-	case sf::Event::KeyReleased:
-	    m_hmKeys[m_WindowEvent.key.code] = 
-		m_WindowEvent.type == sf::Event::KeyPressed ? 
-		KeyStatus::Pressed : 
-		KeyStatus::Released;
-	    break;
-	}
+		switch (m_WindowEvent.type) {
+		case sf::Event::Closed:
+			m_pWindow->close();
+			break;
+		case sf::Event::KeyPressed:
+		case sf::Event::KeyReleased:
+			m_hmKeys[m_WindowEvent.key.code] = 
+			m_WindowEvent.type == sf::Event::KeyPressed ? 
+			KeyStatus::Pressed : 
+			KeyStatus::Released;
+			break;
+		}
     }
 }
 
@@ -55,8 +55,8 @@ void GameApp::RefreshAndDisplay() {
     
     // Draw every object in our list
     for (auto itObjs = m_llstDrawableObjects.begin(); 
-	itObjs != m_llstDrawableObjects.end(); itObjs++) {
-	m_pWindow->draw(**itObjs);
+		itObjs != m_llstDrawableObjects.end(); itObjs++) {
+		m_pWindow->draw(**itObjs);
     }
 
     // Display the result
@@ -65,11 +65,11 @@ void GameApp::RefreshAndDisplay() {
 
 void GameApp::PlaySoundEffects() {
     for (auto itSfxMap = m_hmSoundEffects.begin(); itSfxMap != m_hmSoundEffects.end(); itSfxMap++) {
-	auto& prEntry = itSfxMap->second;
-	if (prEntry.second) {
-	    prEntry.first->play();
-	    prEntry.second = false;
-	}
+		auto& prEntry = itSfxMap->second;
+		if (prEntry.second) {
+			prEntry.first->play();
+			prEntry.second = false;
+		}
     }
 }
 
@@ -88,7 +88,7 @@ GameApp::GameApp(std::string szWindowTitle,
     FPSControl ctrlFpsControl)
     : m_szWindowTitle(szWindowTitle), m_ctrlMode(ctrlFpsControl) {
     m_pWindow = new sf::RenderWindow(m_WindowSize, m_szWindowTitle,
-	sf::Style::Titlebar | sf::Style::Close);
+		sf::Style::Titlebar | sf::Style::Close);
     m_fFrametime = 1e6f / int(m_ctrlMode);
 }
 
@@ -97,7 +97,7 @@ GameApp::GameApp(sf::VideoMode sfWindowSize, std::string szWindowTitle,
     : m_WindowSize(sfWindowSize), m_szWindowTitle(szWindowTitle),
     m_ctrlMode(ctrlFpsControl) {
     m_pWindow = new sf::RenderWindow(m_WindowSize, m_szWindowTitle, 
-	sf::Style::Titlebar | sf::Style::Close);
+		sf::Style::Titlebar | sf::Style::Close);
     m_fFrametime = 1e6f / int(m_ctrlMode);
 }
 
@@ -132,38 +132,38 @@ int GameApp::RunGame() {
 
     // Main game loop
     while (m_pWindow->isOpen()) {
-	/*---------------------------------------------------------------------|
-	|   Measure how much time the previous took in totaland calculate      |
-	|   as seconds. SFML also has a seconds function, but I would like to  |
-	|   store them as 64-bit integers.                                     |
-	----------------------------------------------------------------------*/
-	m_ullTimePoint2 = m_AppClock.getElapsedTime().asMicroseconds();
-	fFrameTime = (m_ullTimePoint2 - m_ullTimePoint1) / 1e6f;
-	m_ullTimePoint1 = m_ullTimePoint2;
+		/*---------------------------------------------------------------------|
+		|   Measure how much time the previous took in totaland calculate      |
+		|   as seconds. SFML also has a seconds function, but I would like to  |
+		|   store them as 64-bit integers.                                     |
+		----------------------------------------------------------------------*/
+		m_ullTimePoint2 = m_AppClock.getElapsedTime().asMicroseconds();
+		fFrameTime = (m_ullTimePoint2 - m_ullTimePoint1) / 1e6f;
+		m_ullTimePoint1 = m_ullTimePoint2;
 
-	// Handle our input and store the state of the keyboard
-	HandleInput();
-	
-	// Time to let the derived class handle its logic
-	if (!OnUpdate(fFrameTime)) 
-	    return -1;
+		// Handle our input and store the state of the keyboard
+		HandleInput();
+		
+		// Time to let the derived class handle its logic
+		if (!OnUpdate(fFrameTime)) 
+			return -1;
 
-	PlaySoundEffects();
+		PlaySoundEffects();
 
-	// If we had any 'released' keys clear them here, OnUpdate has already been
-	// made aware of any released keys this frame
-	ResetReleasedKeys();
+		// If we had any 'released' keys clear them here, OnUpdate has already been
+		// made aware of any released keys this frame
+		ResetReleasedKeys();
 
-	// Draw all the objects in our linked list
-	RefreshAndDisplay();
+		// Draw all the objects in our linked list
+		RefreshAndDisplay();
 
-	// Clear all the pointers in our linked list for the next frame
-	m_llstDrawableObjects.clear();
+		// Clear all the pointers in our linked list for the next frame
+		m_llstDrawableObjects.clear();
 
-	// If we have FPS control enabled, handle it here
-	if (m_ctrlMode != FPSControl::NONE) {
-	    LockFrameRate();
-	}
+		// If we have FPS control enabled, handle it here
+		if (m_ctrlMode != FPSControl::NONE) {
+			LockFrameRate();
+		}
     }
 
     return 0;

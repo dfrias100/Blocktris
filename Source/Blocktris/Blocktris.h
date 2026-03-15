@@ -100,40 +100,40 @@ class BlockTris : public GameApp {
 private:
     // Enum holding all possible states of the game
     enum class GameStates {
-	BlockGeneration,
-	BlockFalling,
-	BlockLockDelay,
-	BlockHit,
-	LineClearing,
-	HoldPieceAttempt,
-	Pause,
-	GameOver
+        BlockGeneration,
+        BlockFalling,
+        BlockLockDelay,
+        BlockHit,
+        LineClearing,
+        HoldPieceAttempt,
+        Pause,
+        GameOver
     };
 
     enum SoundEffects {
-	SFX_MOVE_ROT,
-	SFX_HIT,
-	SFX_LOCK,
-	SFX_LEVEL_UP,
-	SFX_PAUSE_IN,
-	SFX_PAUSE_OUT,
-	SFX_LINES_DESTROYED,
-	SFX_LINE_CLEAR_NORMAL, 
-	SFX_LINE_CLEAR_QUADRUPLE,
-	SFX_DETECT_T_SPIN,
-	SFX_T_SPIN_AWARD,
-	SFX_COMBO
+        SFX_MOVE_ROT,
+        SFX_HIT,
+        SFX_LOCK,
+        SFX_LEVEL_UP,
+        SFX_PAUSE_IN,
+        SFX_PAUSE_OUT,
+        SFX_LINES_DESTROYED,
+        SFX_LINE_CLEAR_NORMAL, 
+        SFX_LINE_CLEAR_QUADRUPLE,
+        SFX_DETECT_T_SPIN,
+        SFX_T_SPIN_AWARD,
+        SFX_COMBO
     };
 
     enum MoveSprites {
-	SPRITE_B2B,
-	SPRITE_SINGLE,
-	SPRITE_DOUBLE,
-	SPRITE_TRIPLE,
-	SPRITE_QUAD,
-	SPRITE_T_SPIN,
-	SPRITE_MINI_T_SPIN,
-	SPRITE_COMBO
+        SPRITE_B2B,
+        SPRITE_SINGLE,
+        SPRITE_DOUBLE,
+        SPRITE_TRIPLE,
+        SPRITE_QUAD,
+        SPRITE_T_SPIN,
+        SPRITE_MINI_T_SPIN,
+        SPRITE_COMBO
     };
 
     virtual bool OnInitialize() override;
@@ -248,15 +248,15 @@ void BlockTris::ReassignDigits(Iter itFirst, Iter itLast, size_t stLen, unsigned
     unsigned long long ullNumCopy = ullNum;
 
     for (int i = 0; i < stLen; i++) {
-	vDigits.push_back(ullNumCopy % 10);
-	ullNumCopy /= 10;
+        vDigits.push_back(ullNumCopy % 10);
+        ullNumCopy /= 10;
     };
 
     for (int i = 0; itFirst != itLast; itFirst++) {
-	itFirst->setTextureRect(sf::IntRect(
-	    vDigits[stLen - 1 - i] * FontWidth, 0, FontWidth, FontHeight
-	));
-	i++;
+        itFirst->setTextureRect(sf::IntRect(
+            vDigits[stLen - 1 - i] * FontWidth, 0, FontWidth, FontHeight
+        ));
+        i++;
     }
 }
 
@@ -264,17 +264,17 @@ template<typename Iter>
 void BlockTris::SetupDigits(Iter itFirst, Iter itLast, float yOffset) {
     float xfOffset = 0;
     for (; itFirst != itLast; itFirst++) {
-	itFirst->setPosition(FirstDigitLineX + xfOffset, FirstDigitLineY + yOffset);
-	itFirst->setTexture(m_sfDigitsTexture);
-	itFirst->setTextureRect(sf::IntRect(0, 0, FontWidth, FontHeight));
-	xfOffset += FontWidth;
+        itFirst->setPosition(FirstDigitLineX + xfOffset, FirstDigitLineY + yOffset);
+        itFirst->setTexture(m_sfDigitsTexture);
+        itFirst->setTextureRect(sf::IntRect(0, 0, FontWidth, FontHeight));
+        xfOffset += FontWidth;
     }
 }
 
 template<typename Iter>
 inline void BlockTris::DrawArrayOfObjects(Iter itFirst, Iter itLast) {
     for (; itFirst != itLast; itFirst++) {
-	PushDrawableObject(&(*itFirst));
+	    PushDrawableObject(&(*itFirst));
     }
 }
 

@@ -44,13 +44,13 @@ private:
     const std::vector<sf::Vector2i> m_vZ_Piece = { {3, -2}, {4, -2}, {4, -1}, {5, -1} };
 
     const std::array<std::vector<sf::Vector2i>, 7> m_aPieces = {
-	m_vI_Piece,
-	m_vJ_Piece,
-	m_vL_Piece,
-	m_vO_Piece,
-	m_vS_Piece,
-	m_vT_Piece,
-	m_vZ_Piece
+        m_vI_Piece,
+        m_vJ_Piece,
+        m_vL_Piece,
+        m_vO_Piece,
+        m_vS_Piece,
+        m_vT_Piece,
+        m_vZ_Piece
     };
 
     static const std::array<std::array<sf::Vector2i, 4>, 4> m_aWallKickData;
@@ -58,13 +58,13 @@ private:
     static const std::array<std::array<sf::Vector2i, 4>, 4> m_aT_SpinCorners;
 
     const std::array<sf::Vector2f, 7> m_aPiecePivots = {
-	sf::Vector2f(4.5f, -1.5f),
-	sf::Vector2f(4.0f, -1.0f),
-	sf::Vector2f(4.0f, -1.0f),
-	sf::Vector2f(4.5f, -1.0f), // The O-piece now matters, for drawing a held piece...
-	sf::Vector2f(4.0f, -1.0f),
-	sf::Vector2f(4.0f, -1.0f),
-	sf::Vector2f(4.0f, -1.0f),
+        sf::Vector2f(4.5f, -1.5f),
+        sf::Vector2f(4.0f, -1.0f),
+        sf::Vector2f(4.0f, -1.0f),
+        sf::Vector2f(4.5f, -1.0f), // The O-piece now matters, for drawing a held piece...
+        sf::Vector2f(4.0f, -1.0f),
+        sf::Vector2f(4.0f, -1.0f),
+        sf::Vector2f(4.0f, -1.0f),
     };
     
     std::array<sf::RectangleShape, 4> m_asfPieceViz;
