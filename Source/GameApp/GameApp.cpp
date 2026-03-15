@@ -41,9 +41,9 @@ inline void GameApp::HandleInput() {
 		case sf::Event::KeyPressed:
 		case sf::Event::KeyReleased:
 			m_hmKeys[m_WindowEvent.key.code] = 
-			m_WindowEvent.type == sf::Event::KeyPressed ? 
-			KeyStatus::Pressed : 
-			KeyStatus::Released;
+				m_WindowEvent.type == sf::Event::KeyPressed ? 
+					KeyStatus::Pressed : 
+					KeyStatus::Released;
 			break;
 		}
     }

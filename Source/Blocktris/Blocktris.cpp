@@ -228,9 +228,9 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 			
 			if (m_pActiveTetrimino->TranslateTetriminoHorizontal(bMoveLeft, bMoveRight, m_aLogicalBoard)) 
 			{
-			m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
-			CalculateHardDropPreview();
-			bMovedOrRotated = true;
+				m_pHardDropPreview = std::make_shared<Tetrimino>(*m_pActiveTetrimino);
+				CalculateHardDropPreview();
+				bMovedOrRotated = true;
 			}
 
 			if (m_bKeyPressedInitialLeft || m_bKeyPressedInitialRight) 
@@ -253,7 +253,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
 			(m_gsState == GameStates::BlockFalling || m_gsState == GameStates::BlockLockDelay)
 		) {
 			sf::Vector2f sfRotationCoefficients = bLeftRotation ?
-			sf::Vector2f(-1.0f, 1.0f) : sf::Vector2f(1.0f, -1.0f);
+				sf::Vector2f(-1.0f, 1.0f) : sf::Vector2f(1.0f, -1.0f);
 
 			if (m_pActiveTetrimino->RotateTetrimino(sfRotationCoefficients, m_aLogicalBoard)) 
 			{
@@ -294,7 +294,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     |    vertical collision, we should transition to the collision state   |
     |    where it will contain the logic needed to add the tetrimino to    |
     |    the pile. This greatly simplifies the logic needed to process     |
-    |    all the states that need the game could be in.                    |
+    |    all the states that the game could be in.                         |
     |---------------------------------------------------------------------*/
 
     switch (m_gsState)
@@ -535,7 +535,7 @@ bool BlockTris::OnUpdate(float fFrameTime) {
     DrawPreviewAndHeld();
 
     if (m_gsState == GameStates::BlockHit)
-	m_pActiveTetrimino->DoAnimation();
+		m_pActiveTetrimino->DoAnimation();
 
     if (m_gsState == GameStates::LineClearing) {
 		for (size_t sztRowIndex : m_vLineClearRowIndexes) 
