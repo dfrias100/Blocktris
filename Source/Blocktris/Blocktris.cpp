@@ -65,7 +65,7 @@ bool BlockTris::OnInitialize() {
     SetupOutline(m_sfBoardOutline, BoardOffsetX, BoardOffsetY);
     SetupOutline(m_sfPreviewOutline, PreviewRectOffsetX, PreviewRectOffsetY);
     SetupOutline(m_sfHeldOutline, 
-	ScreenWidth - (PreviewRectOffsetX + PreviewRectSizeX), 
+		ScreenWidth - (PreviewRectOffsetX + PreviewRectSizeX), 
 	PreviewRectOffsetY);
 
     // Pre-formatting the blocks that will make up the tetrimino pile
@@ -82,7 +82,7 @@ bool BlockTris::OnInitialize() {
     // Setup the row metadata. Each element will hold how many full spots there are and 
     // whether or not it has been marked as cleared for a particular check iteration.
     for (unsigned int& nRow : m_aRowMetaData) {
-	nRow = 0;
+		nRow = 0;
     }
     
     // For now, we will set up the initial state as falling
